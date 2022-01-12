@@ -8,6 +8,7 @@
 
 namespace fx_system
 {
+	// checked
 	std::uint32_t FX_ElemRandomSeed(int effectRandomSeed, int elemMsecBegin, int sequence)
 	{
 		return (0x128 * sequence + effectRandomSeed + elemMsecBegin) % 0x1DFu;

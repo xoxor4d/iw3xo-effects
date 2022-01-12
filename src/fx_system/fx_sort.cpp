@@ -139,7 +139,8 @@ namespace fx_system
 			do
 			{
 				FxElem* elem = FX_ElemFromHandle(system, elemHandle);
-				elemHandle = *(WORD*)&elem[1].defIndex;
+				//elemHandle = *(WORD*)&elem[1].defIndex;
+				elemHandle = *(&system->elems->___u0.item.nextElemHandleInEffect + 2 * elemHandle);
 				FX_SortSpriteElemIntoEffect(system, effect, elem);
 
 			} while (elemHandle != stopElemHandle);
@@ -148,7 +149,8 @@ namespace fx_system
 
 			for (elemHandle = effect->firstElemHandle[0]; 
 				 elemHandle != UINT16_MAX;
-				 elemHandle = *(WORD*)&remoteElem[1].defIndex)
+				 //elemHandle = *(WORD*)&remoteElem[1].defIndex)
+				elemHandle = *(&system->elems->___u0.item.nextElemHandleInEffect + 2 * elemHandle))
 			{
 				remoteElem = FX_ElemFromHandle(system, elemHandle);
 				if (static_cast<std::uint8_t>(effect->def->elemDefs[ static_cast<std::uint8_t>(remoteElem->defIndex) ].elemType) > FX_ELEM_TYPE_LAST_SPRITE)

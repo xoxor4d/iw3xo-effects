@@ -25,16 +25,39 @@ BOOL init_threads()
 
 
 
+void com_printf_to_console([[maybe_unused]] int channel, const char* _format, ...)
+{
+	va_list _arglist;
+	char text_out[1024];
+
+	__crt_va_start(_arglist, _format);
+	vsprintf(text_out, _format, _arglist);
+	_vfprintf_l(stdout, _format, NULL, _arglist);
+	__crt_va_end(_arglist);
+}
+
 
 namespace components
 {
 	main_module::main_module()
 	{
 		init_threads();
+		utils::hook::detour(0x402600, com_printf_to_console, HK_JUMP);
+
+		// ------------------
+
+		utils::hook::detour(0x487880, fx_system::FX_BeginLooping, HK_JUMP);
+		utils::hook::detour(0x4753C0, fx_system::FX_KillEffect, HK_JUMP);
+		utils::hook::detour(0x4740E0, fx_system::FX_SpawnEffect, HK_JUMP);
+
+		// assert live edit
+		//utils::hook::detour(0x473E50, fx_system::FX_RunGarbageCollectionAndPrioritySort, HK_JUMP);
 
 		//utils::hook(0x475A00, fx_system::FX_ElemFromHandleTest, HOOK_CALL).install()->quick();
 
-		utils::hook::detour(0x473300, fx_system::FX_ElemToHandle, HK_JUMP);
+		
+
+		
 
 	}
 

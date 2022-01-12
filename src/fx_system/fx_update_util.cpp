@@ -83,6 +83,7 @@ namespace fx_system
 		}
 	}
 
+	// checked
 	void FX_GetOriginForTrailElem([[maybe_unused]] FxEffect* effect, FxElemDef* elemDef, FxSpatialFrame* effectFrameWhenPlayed, int randomSeed, float* outOrigin, float* outRight, float* outUp)
 	{
 
@@ -91,13 +92,15 @@ namespace fx_system
 			Assert();
 		}
 
+		// todo: limit selection to world only
 		if ((elemDef->flags & FX_ELEM_RUN_MASK) != FX_ELEM_RUN_RELATIVE_TO_WORLD)
 		{
 			Assert();
 		}
 
 		float effectFrameAxis[3][3];
-		UnitQuatToAxis(effectFrameWhenPlayed->quat, effectFrameAxis);
+		UnitQuatToAxis(effectFrameWhenPlayed->quat, effectFrameAxis); //utils::hook::call<void(__cdecl)(const float *, float (*)[3])>(0x433A50)(effectFrameWhenPlayed->quat, effectFrameAxis);
+		
 
 		outRight[0] = effectFrameAxis[1][0];
 		outRight[1] = effectFrameAxis[1][1];
@@ -106,10 +109,11 @@ namespace fx_system
 		outUp[1] = effectFrameAxis[2][1];
 		outUp[2] = effectFrameAxis[2][2];
 
-		FX_GetSpawnOrigin(effectFrameWhenPlayed, elemDef, randomSeed, outOrigin);
-		FX_OffsetSpawnOrigin(effectFrameWhenPlayed, elemDef, randomSeed, outOrigin);
+		FX_GetSpawnOrigin(effectFrameWhenPlayed, elemDef, randomSeed, outOrigin); //utils::hook::call<void(__cdecl)(FxSpatialFrame*, FxElemDef*, int, float*)>(0x489280)(effectFrameWhenPlayed, elemDef, randomSeed, outOrigin);
+		FX_OffsetSpawnOrigin(effectFrameWhenPlayed, elemDef, randomSeed, outOrigin); //utils::hook::call<void(__cdecl)(FxSpatialFrame*, FxElemDef*, int, float*)>(0x489120)(effectFrameWhenPlayed, elemDef, randomSeed, outOrigin);
 	}
 
+	// checked
 	void FX_GetSpawnOrigin(FxSpatialFrame* frameAtSpawn, FxElemDef* elemDef, int randomSeed, float* spawnOrigin)
 	{
 		float offset[3];
@@ -117,7 +121,7 @@ namespace fx_system
 		offset[1] = fx_randomTable[7 + randomSeed] * elemDef->spawnOrigin[1].amplitude + elemDef->spawnOrigin[1].base;
 		offset[2] = fx_randomTable[8 + randomSeed] * elemDef->spawnOrigin[2].amplitude + elemDef->spawnOrigin[2].base;
 
-		if ((elemDef->flags & FX_ELEM_SPAWN_RELATIVE_TO_EFFECT) != 0)
+		if ((elemDef->flags & FX_ELEM_SPAWN_RELATIVE_TO_EFFECT) == 0)
 		{
 			spawnOrigin[0] = frameAtSpawn->origin[0] + offset[0];
 			spawnOrigin[1] = frameAtSpawn->origin[1] + offset[1];
@@ -129,6 +133,7 @@ namespace fx_system
 		}
 	}
 
+	// checked
 	void FX_OffsetSpawnOrigin(FxSpatialFrame* effectFrame, FxElemDef* elemDef, int randomSeed, float* spawnOrigin)
 	{
 		if ((elemDef->flags & FX_ELEM_SPAWN_OFFSET_MASK) != FX_ELEM_SPAWN_OFFSET_NONE)
