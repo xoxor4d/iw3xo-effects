@@ -27,7 +27,7 @@ namespace fx_system
 	FxUpdateResult		FX_UpdateElementPosition_CollidingStep(int msecUpdateBegin, FxUpdateElem* update, FxSystem* system, int msecUpdateEnd, float* xyzWorldOld);
 	FxUpdateResult		FX_UpdateElementPosition_Colliding(FxUpdateElem* update, FxSystem* system);
 	FxUpdateResult		FX_UpdateElementPosition(FxUpdateElem* update, FxSystem* system);
-	FxUpdateResult		FX_UpdateElement(FxSystem* system, FxEffect* effect, FxElem* elem, int msecUpdateBegin, int msecUpdateEnd);
+	FxUpdateResult		FX_UpdateElement(FxSystem* system, FxEffect* effect, FxElem* elem, const int msecUpdateBegin, const int msecUpdateEnd);
 
 	void				FX_SpawnOneShotElems(FxSystem* system, FxEffect* effect, int elemDefIndex, FxSpatialFrame* frameWhenPlayed, int msecWhenPlayed);
 	void				FX_TriggerOneShot(FxSystem* system, FxEffect* effect, int elemDefFirst, int elemDefCount, FxSpatialFrame* frameWhenPlayed, int msecWhenPlayed);

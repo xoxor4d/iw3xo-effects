@@ -8,9 +8,18 @@
 
 namespace fx_system
 {
+	// checked
 	int FX_GetElemLifeSpanMsec(int elemRandomSeed, FxElemDef* elemDef)
 	{
-		return elemDef->lifeSpanMsec.base + (((elemDef->lifeSpanMsec.amplitude + 1) * LOWORD((&fx_randomTable)[elemRandomSeed + 17])) >> 16);
+		int rnd;
+
+		// JTAG :*
+		rnd = *reinterpret_cast<std::uint16_t*>(&fx_randomTable[17 + elemRandomSeed]);
+		rnd *= (elemDef->lifeSpanMsec.amplitude + 1);
+		rnd = rnd >> 16;
+		rnd += elemDef->lifeSpanMsec.base;
+
+		return rnd;
 	}
 
 	void FX_SpatialFrameToOrientation(FxSpatialFrame* frame, game::orientation_t* orient)

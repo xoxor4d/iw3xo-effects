@@ -8,6 +8,7 @@
 
 namespace fx_system
 {
+	// checked
 	FxElemDef* FX_GetUpdateElemDef(FxUpdateElem* update)
 	{
 		if (!update->effect)
@@ -227,7 +228,7 @@ namespace fx_system
 		const float t0 = static_cast<float>(msecUpdateBegin - update->msecElemBegin) / update->msecLifeSpan;
 		const float t1 = static_cast<float>(msecUpdateEnd - update->msecElemBegin) / update->msecLifeSpan;
 		
-		FX_IntegrateVelocity(update, t0, t1, posLocal, posWorld);
+		FX_IntegrateVelocity(update, t0, t1, posLocal, posWorld); //utils::hook::call<void(__cdecl)(FxUpdateElem*, float, float, float*, float*)>(0x485D10)(update, t0, t1, posLocal, posWorld);
 	}
 
 	void FX_NextElementPosition(int msecUpdateEnd, FxUpdateElem* update, int msecUpdateBegin)
@@ -320,16 +321,17 @@ namespace fx_system
 		return static_cast<char>(((256.0f * residual) / maxDistPerEmit) + 9.313225746154785e-10);
 	}
 
-	bool FX_UpdateElement_SetupUpdate(FxUpdateElem* update, int msecUpdateEnd, int msecUpdateBegin, FxEffect* effect, int elemDefIndex, int elemAtRestFraction, int elemMsecBegin, int elemSequence, float* elemOrigin)
+	// checked
+	bool FX_UpdateElement_SetupUpdate(FxUpdateElem* update, const int msecUpdateEnd, const int msecUpdateBegin, FxEffect* effect, const int elemDefIndex, const int elemAtRestFraction, const int elemMsecBegin, const int elemSequence, float* elemOrigin)
 	{
-		memset(update, 208, sizeof(FxUpdateElem));
+		memset(update, 0xD0, sizeof(FxUpdateElem));
 
 		update->effect = effect;
 		update->msecUpdateBegin = msecUpdateBegin;
 		update->msecUpdateEnd = msecUpdateEnd;
 		update->msecElemBegin = elemMsecBegin;
 
-		if (msecUpdateBegin > msecUpdateEnd)
+		if (update->msecUpdateBegin > update->msecUpdateEnd)
 		{
 			Assert();
 		}
@@ -347,19 +349,24 @@ namespace fx_system
 		update->atRestFraction = elemAtRestFraction;
 		update->elemIndex = elemDefIndex;
 		update->sequence = elemSequence;
-		update->randomSeed = (int)FX_ElemRandomSeed(effect->randomSeed, elemMsecBegin, elemSequence);
+		update->randomSeed = FX_ElemRandomSeed(effect->randomSeed, elemMsecBegin, elemSequence);
+
+		if(!update->effect)
+		{
+			Assert();
+		}
 
 		FxElemDef* elemDef = FX_GetUpdateElemDef(update);
-		const int random_lifespan = FX_GetElemLifeSpanMsec(update->randomSeed, elemDef);
+		const int rnd_lifespawn = FX_GetElemLifeSpanMsec(update->randomSeed, elemDef);
 
-		update->msecElemEnd = random_lifespan + update->msecElemBegin;
-		update->msecLifeSpan = static_cast<float>(random_lifespan);
+		update->msecElemEnd = rnd_lifespawn + update->msecElemBegin;
+		update->msecLifeSpan = static_cast<float>(rnd_lifespawn);
 		update->elemOrigin = elemOrigin;
-
 
 		return true;
 	}
 
+	// checked
 	bool FX_UpdateElement_TruncateToElemBegin(FxUpdateElem* update, FxUpdateResult* outUpdateResult)
 	{
 		if (update->msecUpdateBegin < update->msecElemBegin)
@@ -392,6 +399,7 @@ namespace fx_system
 		return true;
 	}
 
+	// checked
 	void FX_UpdateElement_TruncateToElemEnd(FxUpdateElem* update, FxUpdateResult* outUpdateResult)
 	{
 		if (update->msecUpdateEnd >= update->msecElemEnd)
@@ -399,10 +407,17 @@ namespace fx_system
 			if (FX_GetUpdateElemDef(update)->effectEmitted.handle)
 			{
 				update->msecUpdateEnd = update->msecElemEnd;
-				if (update->msecUpdateBegin > update->msecUpdateEnd)
+
+				if(update->msecUpdateBegin > update->msecElemEnd)
 				{
-					update->msecUpdateBegin = update->msecUpdateEnd;
+					Assert();
 				}
+
+				// T5 only
+				//if (update->msecUpdateBegin > update->msecUpdateEnd)
+				//{
+					//update->msecUpdateBegin = update->msecUpdateEnd;
+				//}
 			}
 			else
 			{
@@ -506,6 +521,7 @@ namespace fx_system
 		return FX_UPDATE_KEEP;
 	}
 
+	// checked
 	FxUpdateResult FX_UpdateElementPosition(FxUpdateElem* update, FxSystem* system)
 	{
 		FxElemDef* elemDef = FX_GetUpdateElemDef(update);
@@ -514,6 +530,7 @@ namespace fx_system
 			return FxUpdateResult::FX_UPDATE_KEEP;
 		}
 
+		// #PHYS
 		if ((elemDef->flags & FX_ELEM_USE_COLLISION) != 0)
 		{
 			return FX_UpdateElementPosition_Colliding(update, system);
@@ -537,7 +554,7 @@ namespace fx_system
 		return FxUpdateResult::FX_UPDATE_KEEP;
 	}
 
-	FxUpdateResult FX_UpdateElement(FxSystem* system, FxEffect* effect, FxElem* elem, int msecUpdateBegin, int msecUpdateEnd)
+	FxUpdateResult FX_UpdateElement(FxSystem* system, FxEffect* effect, FxElem* elem, const int msecUpdateBegin, const int msecUpdateEnd)
 	{
 		if (!elem)
 		{
@@ -547,7 +564,12 @@ namespace fx_system
 		FxUpdateElem update = {};
 		FxUpdateResult updateResult = FX_UPDATE_KEEP;
 
-		if (!FX_UpdateElement_SetupUpdate(&update, msecUpdateEnd, msecUpdateBegin, effect, elem->defIndex, elem->atRestFraction, elem->msecBegin, elem->sequence, elem->___u8.origin))
+		if (!FX_UpdateElement_SetupUpdate(&update, msecUpdateEnd, msecUpdateBegin, effect, 
+			static_cast<std::uint8_t>(elem->defIndex),
+			static_cast<std::uint8_t>(elem->atRestFraction), 
+			elem->msecBegin, 
+			static_cast<std::uint8_t>(elem->sequence), 
+			elem->___u8.origin))
 		{
 			return updateResult;
 		}
@@ -571,13 +593,40 @@ namespace fx_system
 			update.onGround = false;
 
 			updateResult = FX_UpdateElementPosition(&update, system);
+			/*const static uint32_t FX_UpdateElementPosition_addr = 0x486A70;
+			__asm
+			{
+				pushad;
+				mov		ebx, system;
+				lea     eax, [update];
+				call	FX_UpdateElementPosition_addr;
+				mov		updateResult, eax;
+				popad;
+			}*/
+
 			FX_UpdateElement_HandleEmitting(&update, system, elem, elemOriginPrev, &updateResult);
+			//const static uint32_t FX_UpdateElement_HandleEmitting_addr = 0x486D90;
+			//__asm
+			//{
+			//	pushad;
+
+			//	push    updateResult; // updateResult
+			//	push    elemOriginPrev; // elemOrgPrev
+			//	push    elem; // elem
+			//	push    system; // sys
+			//	lea     edi, [update];
+			//	call	FX_UpdateElement_HandleEmitting_addr;
+			//	add		esp, 0x10;
+
+			//	popad;
+			//}
+
 		}
 
 		FxElemDef* elemDef = FX_GetUpdateElemDef(&update);
 		if (updateResult)
 		{
-			if (update.atRestFraction == 255 && Vec3Compare(elem->___u8.origin, elemOriginPrev) && ((elemDef->flags & 0x100) == 0 || update.onGround))
+			if (update.atRestFraction == 255 && Vec3Compare(elem->___u8.origin, elemOriginPrev) && ((elemDef->flags & FX_ELEM_USE_COLLISION) == 0 || update.onGround))
 			{
 				elem->atRestFraction = static_cast<char>(FX_GetAtRestFraction(&update, static_cast<float>(update.msecUpdateEnd)));
 				return updateResult;

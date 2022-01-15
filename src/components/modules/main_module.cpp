@@ -39,6 +39,70 @@ void com_printf_to_console([[maybe_unused]] int channel, const char* _format, ..
 
 namespace components
 {
+	//void __declspec(naked) asd()
+	//{
+	//	const static uint32_t retn_pt = 0x4870B5;
+	//	__asm
+	//	{
+	//		// elemOrigin ------------- ! pushed
+	//		// elemSequence ------------- ! pushed
+	//		// elemMsecBegin ------------- ! pushed
+	//		// elemAtRestFraction ------------- ! pushed 
+	//		// elemDefIndex ------------- ! pushed
+	//		// effect ------------- ! pushed
+	//		// msecUpdateBegin (ebx)
+	//		// msecUpdateEnd (ecx)
+	//		// update (eax)
+
+	//		//mov     eax, [ebp - 94h];
+
+	//		push	ebx;
+	//		push	ecx;
+	//		push	eax;
+	//		call	fx_system::FX_UpdateElement_SetupUpdate;
+	//		add		esp, 12;
+	//		jmp		retn_pt; // jump back to add esp 0x18
+	//	}
+	//}
+
+	//void __declspec(naked) asd2()
+	//{
+	//	const static uint32_t retn_pt = 0x4870C0;
+	//	const static uint32_t retn_pt_jz = 0x4871E9;
+	//	__asm
+	//	{
+	//		// elemOrigin ------------- ! pushed
+	//		// elemSequence ------------- ! pushed
+	//		// elemMsecBegin ------------- ! pushed
+	//		// elemAtRestFraction ------------- ! pushed 
+	//		// elemDefIndex ------------- ! pushed
+	//		// effect ------------- ! pushed
+	//		// msecUpdateBegin (ebx)
+	//		// msecUpdateEnd (ecx)
+	//		// update (eax)
+
+	//		//mov     eax, [ebp - 94h];
+
+	//		push	ebx;
+	//		push	ecx;
+	//		push	eax;
+	//		call	fx_system::FX_UpdateElement_SetupUpdate;
+	//		add		esp, 12;
+
+	//		add     esp, 0x18; // stock
+	//		test    al, al;
+	//		jz      loc_4871E9;
+	//		jmp		retn_pt; // jump back to lea
+
+	//		loc_4871E9:
+	//		jmp		retn_pt_jz;
+	//	}
+	//}
+
+	//utils::hook(0x4870B0, asd, HOOK_JUMP).install()->quick();
+	//utils::hook(0x486FA1, asd2, HOOK_JUMP).install()->quick();
+
+
 	main_module::main_module()
 	{
 		init_threads();
@@ -49,6 +113,7 @@ namespace components
 		utils::hook::detour(0x487880, fx_system::FX_BeginLooping, HK_JUMP);
 		utils::hook::detour(0x4753C0, fx_system::FX_KillEffect, HK_JUMP);
 		utils::hook::detour(0x4740E0, fx_system::FX_SpawnEffect, HK_JUMP);
+		utils::hook::detour(0x487050, fx_system::FX_UpdateElement, HK_JUMP);
 
 		// assert live edit
 		//utils::hook::detour(0x473E50, fx_system::FX_RunGarbageCollectionAndPrioritySort, HK_JUMP);

@@ -492,10 +492,11 @@ namespace fx_system
 		int msecBegin = msecWhenPlayed + elemDef->spawnDelayMsec.base;
 		if (elemDef->spawnDelayMsec.amplitude)
 		{
-			msecBegin += ((elemDef->spawnDelayMsec.amplitude + 1) * static_cast<std::uint16_t>(fx_randomTable[18 + FX_ElemRandomSeed(effect->randomSeed, msecBegin, sequence)])) >> 16;
+			//msecBegin += ((elemDef->spawnDelayMsec.amplitude + 1) * static_cast<std::uint16_t>(fx_randomTable[18 + FX_ElemRandomSeed(effect->randomSeed, msecBegin, sequence)])) >> 16;
+			msecBegin += ((elemDef->spawnDelayMsec.amplitude + 1) * FX_RandomFloatAsUInt16(18, FX_ElemRandomSeed(effect->randomSeed, msecBegin, sequence))) >> 16;
 		}
 
-		const unsigned int randomSeed = FX_ElemRandomSeed(effect->randomSeed, msecBegin, sequence);
+		const int randomSeed = FX_ElemRandomSeed(effect->randomSeed, msecBegin, sequence);
 		if (elemDef->elemType == FX_ELEM_TYPE_RUNNER)
 		{
 			FX_SpawnRunner(effectFrameWhenPlayed, effect, elemDef, system, randomSeed, msecBegin);
@@ -505,7 +506,9 @@ namespace fx_system
 			// #MARKS
 			// FX_CreateImpactMarkInternal(system->localClientNum, (int)elemDef, (int)effectFrameWhenPlayed, (unsigned __int16)randomSeed);
 		}
-		else if (elemDef->elemType != FX_ELEM_TYPE_SOUND && (elemDef->effectOnImpact.handle || elemDef->effectOnDeath.handle || elemDef->effectEmitted.handle || msecBegin + elemDef->lifeSpanMsec.base + (((elemDef->lifeSpanMsec.amplitude + 1) * (unsigned __int16)fx_randomTable[17 + randomSeed]) >> 16) > system->msecNow))
+		else if (elemDef->elemType != FX_ELEM_TYPE_SOUND && 
+			(elemDef->effectOnImpact.handle || elemDef->effectOnDeath.handle || elemDef->effectEmitted.handle ||
+				msecBegin + FX_GetElemLifeSpanMsec(randomSeed, elemDef) > system->msecNow)) //msecBegin + elemDef->lifeSpanMsec.base + (((elemDef->lifeSpanMsec.amplitude + 1) * (unsigned __int16)fx_randomTable[17 + randomSeed]) >> 16) > system->msecNow))
 		{
 			FxElem* remoteElem = FX_AllocElem(system);
 			if (remoteElem)
@@ -513,7 +516,7 @@ namespace fx_system
 				FX_AddRefToEffect(system, effect);
 				remoteElem->defIndex = static_cast<char>(elemDefIndex);
 				remoteElem->sequence = static_cast<char>(sequence);
-				remoteElem->atRestFraction = -1;
+				remoteElem->atRestFraction = (char)255;
 				remoteElem->emitResidual = 0;
 				remoteElem->msecBegin = msecBegin;
 
@@ -996,7 +999,7 @@ namespace fx_system
 
 		system->firstNewEffect = system->firstFreeEffect;
 
-		FX_StartNewEffect(system, remoteEffect); utils::hook::call<void(__cdecl)(FxSystem*, FxEffect*)>(0x487A80)(system, remoteEffect);
+		FX_StartNewEffect(system, remoteEffect); //utils::hook::call<void(__cdecl)(FxSystem*, FxEffect*)>(0x487A80)(system, remoteEffect);
 
 		return remoteEffect;
 	}
