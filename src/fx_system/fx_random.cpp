@@ -4,8 +4,6 @@
 						__debugbreak();		\
 					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__)
 
-#define LODWORD(x)  (*((DWORD*)&(x)))  // low dword
-
 namespace fx_system
 {
 	std::uint16_t FX_RandomFloatAsUInt16(int start_index, int seed)

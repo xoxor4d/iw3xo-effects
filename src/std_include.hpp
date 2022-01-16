@@ -80,6 +80,7 @@
 #include "fx_system/fx_random.hpp"
 #include "fx_system/fx_sort.hpp"
 #include "fx_system/fx_draw.hpp"
+#include "fx_system/fx_cmd.hpp"
 
 #include "components/loader.hpp"
 

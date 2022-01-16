@@ -114,9 +114,9 @@ namespace components
 		utils::hook::detour(0x4753C0, fx_system::FX_KillEffect, HK_JUMP);
 		utils::hook::detour(0x4740E0, fx_system::FX_SpawnEffect, HK_JUMP);
 		utils::hook::detour(0x487050, fx_system::FX_UpdateElement, HK_JUMP);
+		utils::hook::detour(0x488600, fx_system::FX_UpdateRemaining, HK_JUMP);
 
-		// assert live edit
-		//utils::hook::detour(0x473E50, fx_system::FX_RunGarbageCollectionAndPrioritySort, HK_JUMP);
+
 
 		//utils::hook(0x475A00, fx_system::FX_ElemFromHandleTest, HOOK_CALL).install()->quick();
 

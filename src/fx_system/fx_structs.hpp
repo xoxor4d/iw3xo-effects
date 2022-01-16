@@ -1,5 +1,15 @@
 #pragma once
 
+#define LODWORD(x)  (*((DWORD*)&(x)))  // low dword
+
+// labels:
+/*
+ * #MARKS
+ * #PHYS
+ *
+ * #ENV_DEPENDENT
+ */
+
 namespace fx_system
 {
 	constexpr auto FX_HANDLE_NONE = 0xFFFF;
@@ -26,6 +36,30 @@ namespace fx_system
 
 
 	struct FxEffectDef;
+
+	enum WorkerCmdType
+	{
+		WRKCMD_FIRST_FRONTEND = 0x0,
+		WRKCMD_UPDATE_FX_SPOT_LIGHT = 0x0,
+		WRKCMD_UPDATE_FX_NON_DEPENDENT = 0x1,
+		WRKCMD_UPDATE_FX_REMAINING = 0x2,
+		WRKCMD_DPVS_CELL_STATIC = 0x3,
+		WRKCMD_DPVS_CELL_SCENE_ENT = 0x4,
+		WRKCMD_DPVS_CELL_DYN_MODEL = 0x5,
+		WRKCMD_DPVS_CELL_DYN_BRUSH = 0x6,
+		WRKCMD_DPVS_ENTITY = 0x7,
+		WRKCMD_ADD_SCENE_ENT = 0x8,
+		WRKCMD_SPOT_SHADOW_ENT = 0x9,
+		WRKCMD_SHADOW_COOKIE = 0xA,
+		WRKCMD_BOUNDS_ENT_DELAYED = 0xB,
+		WRKCMD_SKIN_ENT_DELAYED = 0xC,
+		WRKCMD_GENERATE_FX_VERTS = 0xD,
+		WRKCMD_GENERATE_MARK_VERTS = 0xE,
+		WRKCMD_SKIN_CACHED_STATICMODEL = 0xF,
+		WRKCMD_SKIN_XMODEL = 0x10,
+		WRKCMD_COUNT = 0x11,
+	};
+
 
 	enum $D91DF7250D497AE680597430665E65B1
 	{
@@ -342,6 +376,27 @@ namespace fx_system
 		float distanceTraveled;
 	};
 
+	struct FxBeam
+	{
+		float begin[3];
+		float end[3];
+		game::GfxColor beginColor;
+		game::GfxColor endColor;
+		float beginRadius;
+		float endRadius;
+		game::Material* material;
+		int segmentCount;
+		float wiggleDist;
+	};
+
+
+	struct FxBeamInfo
+	{
+		FxBeam beams[96];
+		int beamCount;
+	};
+
+
 	union $A58BA6DA60295001BBA5E9F807131CF1
 	{
 		int physObjId;
@@ -516,4 +571,69 @@ namespace fx_system
 		bool onGround;
 		int physObjId;
 	};
+
+	struct FxPostLight
+	{
+		float begin[3];
+		float end[3];
+		float radius;
+		game::GfxColor color;
+		game::Material* material;
+	};
+
+	struct FxPostLightInfo
+	{
+		FxPostLight postLights[96];
+		int postLightCount;
+	};
+
+	struct FxElemPreVisualState
+	{
+		float sampleLerp;
+		float sampleLerpInv;
+		FxElemDef* elemDef;
+		FxEffect* effect;
+		FxElemVisStateSample* refState;
+		int randomSeed;
+		unsigned int distanceFade;
+	};
+
+	struct FxDrawState
+	{
+		FxSystem* system;
+		FxEffect* effect;
+		FxElem* elem;
+		FxElemDef* elemDef;
+		game::orientation_t orient;
+		FxCamera* camera;
+		int randomSeed;
+		float msecLifeSpan;
+		float msecElapsed;
+		float normTimeUpdateEnd;
+		float posWorld[3];
+		float velDirWorld[3];
+		FxElemVisualState visState;
+		FxElemPreVisualState preVisState;
+		float physicsLerpFrac;
+		int msecDraw;
+	};
+
+	struct FxGenerateVertsCmd
+	{
+		FxSystem* system;
+		FxBeamInfo* beamInfo;
+		FxPostLightInfo* postLightInfo;
+		FxSpriteInfo* spriteInfo;
+		int localClientNum;
+		float vieworg[3];
+		float viewaxis[3][3];
+	};
+
+	struct FxCmd
+	{
+		FxSystem* system;
+		int localClientNum;
+		volatile int* spawnLock;
+	};
+
 }

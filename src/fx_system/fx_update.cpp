@@ -4,8 +4,6 @@
 						__debugbreak();		\
 					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__)
 
-#define LODWORD(x)  (*((DWORD*)&(x)))  // low dword
-
 namespace fx_system
 {
 	// checked
@@ -257,6 +255,32 @@ namespace fx_system
 		update->posWorld[2] = update->posWorld[2] - secDuration * deltaVelFromGravity * 0.5f;
 	}
 
+	// checked
+	void FX_ProcessLooping(FxSystem* system, FxEffect* effect, int elemDefFirst, int elemDefCount, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd, int msecWhenPlayed, int msecUpdateBegin, int msecUpdateEnd, float distanceTravelledBegin, float distanceTravelledEnd)
+	{
+		if (!effect || !effect->def)
+		{
+			Assert();
+		}
+		
+		const int elemDefEnd = elemDefCount + elemDefFirst;
+		for (int elemDefIndex = elemDefFirst; elemDefIndex != elemDefEnd; ++elemDefIndex)
+		{
+			FX_SpawnLoopingElems(system, effect, elemDefIndex, frameBegin, frameEnd, msecWhenPlayed, msecUpdateBegin, msecUpdateEnd);
+		}
+
+		FxTrail* trail = nullptr;
+
+		for (std::uint16_t trailHandle = effect->firstTrailHandle; trailHandle != UINT16_MAX; trailHandle = trail->nextTrailHandle)
+		{
+			trail = FX_TrailFromHandle(system, trailHandle);
+			if (trail->defIndex >= elemDefFirst && trail->defIndex < elemDefEnd)
+			{
+				FX_SpawnTrailLoopingElems(trail, effect, system, frameBegin, frameEnd, msecWhenPlayed, msecUpdateBegin, msecUpdateEnd, distanceTravelledBegin, distanceTravelledEnd);
+			}
+		}
+	}
+
 	char FX_ProcessEmitting(char emitResidual, FxUpdateElem* update, FxSystem* system, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd)
 	{
 		FxSpatialFrame frameElemNow = {};
@@ -319,6 +343,158 @@ namespace fx_system
 		}
 
 		return static_cast<char>(((256.0f * residual) / maxDistPerEmit) + 9.313225746154785e-10);
+	}
+
+	bool FX_ShouldProcessEffect(FxEffect* effect, FxSystem* system, bool nonBoltedEffectsOnly)
+	{
+		if (nonBoltedEffectsOnly && (*(DWORD*)&effect->boltAndSortOrder & 0xFFC000) != 0xFFC000)
+		{
+			return false;
+		}
+
+		const auto effectFrameCount = effect->frameCount;
+		effect->frameCount = system->frameCount;
+
+		return effectFrameCount != system->frameCount;
+	}
+
+	int FX_LimitStabilizeTimeForEffectDef_Recurse(FxEffectDef* effectDef, int originalUpdateTime)
+	{
+		if (!effectDef)
+		{
+			Assert();
+		}
+
+		const int elemCount = effectDef->elemDefCountEmission + effectDef->elemDefCountOneShot + effectDef->elemDefCountLooping;
+		int maxStabilizeTime = 0;
+
+		if (elemCount)
+		{
+			FxElemDef* elemDefs = effectDef->elemDefs;
+			for (int elemIter = 0; elemIter != elemCount; ++elemIter)
+			{
+				const int limit = FX_LimitStabilizeTimeForElemDef_Recurse(&elemDefs[elemIter], true, originalUpdateTime);
+				if (maxStabilizeTime < limit)
+				{
+					maxStabilizeTime = limit;
+				}
+
+				if (maxStabilizeTime >= originalUpdateTime)
+				{
+					return originalUpdateTime;
+				}
+			}
+		}
+
+		return maxStabilizeTime;
+	}
+
+	int FX_LimitStabilizeTimeForElemDef_SelfOnly(FxElemDef* elemDef, bool needToSpawnSystem)
+	{
+		if (elemDef->elemType == FX_ELEM_TYPE_TRAIL)
+		{
+			return 0x7FFFFFFF;
+		}
+
+		int result = elemDef->spawnDelayMsec.amplitude + elemDef->spawnDelayMsec.base + elemDef->lifeSpanMsec.amplitude + elemDef->lifeSpanMsec.base;
+
+		if (needToSpawnSystem && elemDef->spawn.looping.count > 0)
+		{
+			if (elemDef->spawn.looping.count == 0x7FFFFFFF)
+			{
+				return 0x7FFFFFFF;
+			}
+
+			result += elemDef->spawn.looping.intervalMsec * (elemDef->spawn.looping.count - 1);
+		}
+
+		return result;
+	}
+
+	int FX_LimitStabilizeTimeForElemDef_Recurse(FxElemDef* elemDef, bool needToSpawnSystem, int originalUpdateTime)
+	{
+		if (!elemDef)
+		{
+			Assert();
+		}
+
+		int selfStabilizeTime = FX_LimitStabilizeTimeForElemDef_SelfOnly(elemDef, needToSpawnSystem);
+		int maxStabilizeTime = selfStabilizeTime;
+
+		if (selfStabilizeTime >= originalUpdateTime)
+		{
+			return originalUpdateTime;
+		}
+
+		if (elemDef->elemType == FX_ELEM_TYPE_RUNNER)
+		{
+			if (elemDef->visualCount == 1)
+			{
+				const int limit = FX_LimitStabilizeTimeForEffectDef_Recurse(elemDef->visuals.instance.effectDef.handle, originalUpdateTime);
+				if (selfStabilizeTime < limit)
+				{
+					maxStabilizeTime = limit;
+				}
+				if (maxStabilizeTime >= originalUpdateTime)
+				{
+					return originalUpdateTime;
+				}
+			}
+			else if (elemDef->visualCount)
+			{
+				FxElemVisuals* visArray = elemDef->visuals.array;
+				for (int visIndex = 0; visIndex < static_cast<std::uint8_t>(elemDef->visualCount); ++visIndex)
+				{
+					const int limit = FX_LimitStabilizeTimeForEffectDef_Recurse(visArray[visIndex].effectDef.handle, originalUpdateTime);
+					if (maxStabilizeTime < limit)
+					{
+						maxStabilizeTime = limit;
+					}
+
+					if (maxStabilizeTime >= originalUpdateTime)
+					{
+						return originalUpdateTime;
+					}
+				}
+			}
+		}
+
+		if (elemDef->effectOnDeath.handle)
+		{
+			const int limit = selfStabilizeTime + FX_LimitStabilizeTimeForEffectDef_Recurse(elemDef->effectOnDeath.handle, originalUpdateTime);
+			if (maxStabilizeTime < limit)
+			{
+				maxStabilizeTime = limit;
+			}
+			if (maxStabilizeTime >= originalUpdateTime)
+			{
+				return originalUpdateTime;
+			}
+		}
+
+		if (elemDef->effectOnImpact.handle)
+		{
+			const int limit = selfStabilizeTime + FX_LimitStabilizeTimeForEffectDef_Recurse(elemDef->effectOnImpact.handle, originalUpdateTime);
+			if (maxStabilizeTime < limit)
+			{
+				maxStabilizeTime = limit;
+			}
+			if (maxStabilizeTime >= originalUpdateTime)
+			{
+				return originalUpdateTime;
+			}
+		}
+
+		if (elemDef->effectEmitted.handle)
+		{
+			const int limit = selfStabilizeTime + FX_LimitStabilizeTimeForEffectDef_Recurse(elemDef->effectEmitted.handle, originalUpdateTime);
+			if (maxStabilizeTime < limit)
+			{
+				maxStabilizeTime = limit;
+			}
+		}
+
+		return maxStabilizeTime;
 	}
 
 	// checked
@@ -643,6 +819,389 @@ namespace fx_system
 		return updateResult;
 	}
 
+	FxUpdateResult FX_UpdateTrailElement(FxSystem* system, FxEffect* effect, FxTrail* trail, FxTrailElem* trailElem, int msecUpdateBegin, int msecUpdateEnd)
+	{
+		FxUpdateElem update = {};
+		FxUpdateResult updateResult = FX_UPDATE_KEEP;
+
+
+		if (FX_UpdateElement_SetupUpdate(
+			&update, 
+			msecUpdateEnd, 
+			msecUpdateBegin, 
+			effect, 
+			static_cast<std::uint8_t>(trail->defIndex), 
+			0, 
+			trailElem->msecBegin, 
+			0, 
+			trailElem->origin))
+		{
+			FX_UpdateElement_TruncateToElemEnd(&update, &updateResult);
+			if (updateResult)
+			{
+				if (!FX_UpdateElement_TruncateToElemBegin(&update, &updateResult))
+				{
+					return updateResult;
+				}
+
+				float baseVel[3] =
+				{
+					0.0f, 0.0f, static_cast<float>(trailElem->baseVelZ) * 0.001f
+				};
+
+				update.elemBaseVel = baseVel;
+				update.physObjId = 0;
+				update.onGround = false;
+				updateResult = FX_UpdateElementPosition(&update, system);
+
+				// might aswell do Clamp(static_cast<float>(trailElem->baseVelZ), -32768, 32767)
+				trailElem->baseVelZ = static_cast<std::uint16_t>(Clamp(static_cast<int>(baseVel[2] / 0.001f), -32768, 32767));
+			}
+		}
+
+		return updateResult;
+	}
+
+
+	// checked :: utils::hook::detour(0x487BE0, fx_system::FX_UpdateEffectPartialForClass, HK_JUMP);
+	void FX_UpdateEffectPartialForClass(FxSystem* system, FxEffect* effect, int msecUpdateBegin, int msecUpdateEnd, unsigned __int16 elemHandleStart, unsigned __int16 elemHandleStop, int elemClass)
+	{
+		if (effect->msecLastUpdate <= msecUpdateEnd)
+		{
+			std::uint16_t elemHandle;
+			std::uint16_t elemHandleNext;
+
+			std::uint16_t elemHandleFirstExisting = effect->firstElemHandle[elemClass];
+			unsigned int passCount = 1;
+			do
+			{
+				for (elemHandle = elemHandleStart; elemHandle != elemHandleStop; elemHandle = elemHandleNext)
+				{
+					//if (elemHandle == 0xFFFF)
+					//{
+					//	// Com_Printf(0, "---- EFFECT ABOUT TO ASSERT ----\n");
+					//	// Com_Printf(0, "effect '%s' spawned at %i pass %i\n", effect->def->name, effect->msecBegin, passCount);
+					//	// Com_Printf(0, "looping from %i to %i, first existing is %i\n", elemHandleStart, elemHandleStop, elemHandleFirstExisting);
+					//	// Com_Printf(0, "update period is from %d to %d (%d ms)\n", msecUpdateBegin, msecUpdateEnd, msecUpdateEnd - msecUpdateBegin);
+					//	// Com_Printf(0, "here's the active elem list:\n");
+
+					//	for (elemHandle = effect->firstElemHandle[elemClass];
+					//		elemHandle != 0xFFFF;
+					//		elemHandle = elem->nextElemHandleInEffect)
+					//	{
+					//		//elem = FX_ElemFromHandle(system, elemHandle);
+					//		//v8 = &effect->def->elemDefs[(unsigned __int8)elem->defIndex].lifeSpanMsec;
+					//		// Com_Printf(0, "  elem %i def %i seq %i spawn %i die %i\n", elemHandle, (unsigned __int8)elem->defIndex, (unsigned __int8)elem->sequence, elem->msecBegin, v8->base + (((v8->amplitude + 1) * LOWORD((&fx_randomTable)[(296 * (unsigned __int8)elem->sequence + elem->msecBegin + (unsigned int)effect->randomSeed) % 0x1DF + 17])) >> 16) + elem->msecBegin);
+					//	}
+					//}
+
+					if (elemHandle == UINT16_MAX)
+					{
+						Assert();
+					}
+
+					FxUpdateResult updateResult = {};
+
+					FxElem* elem = FX_ElemFromHandle(system, elemHandle);
+					updateResult = FX_UpdateElement(system, effect, elem, msecUpdateBegin, msecUpdateEnd);
+					elemHandleNext = elem->nextElemHandleInEffect;
+
+					if (elemHandle == elemHandleNext)
+					{
+						Assert();
+					}
+
+					if (updateResult == FX_UPDATE_REMOVE)
+					{
+						FX_FreeElem(system, elemHandle, effect, elemClass);
+						if (elemHandleFirstExisting == elemHandle)
+						{
+							elemHandleFirstExisting = elemHandleNext;
+						}
+					}
+				}
+
+				elemHandleStop = elemHandleFirstExisting;
+				elemHandleFirstExisting = effect->firstElemHandle[elemClass];
+				elemHandleStart = elemHandleFirstExisting;
+				++passCount;
+
+			} while (elemHandleFirstExisting != elemHandleStop);
+		}
+	}
+
+	// checked
+	void FX_UpdateEffectPartialTrail(FxSystem* system, FxEffect* effect, FxTrail* trail, int msecUpdateBegin, int msecUpdateEnd, [[maybe_unused]] float distanceTravelledBegin, [[maybe_unused]] float distanceTravelledEnd, unsigned __int16 trailElemHandleStart, unsigned __int16 trailElemHandleStop, FxSpatialFrame* frameNow)
+	{
+		std::uint16_t trailElemHandle;
+		std::uint16_t trailElemHandleLast = UINT16_MAX;
+		if (trailElemHandleStart == UINT16_MAX)
+		{
+			trailElemHandle = trail->firstElemHandle;
+		}
+		else
+		{
+			trailElemHandle = trailElemHandleStart;
+		}
+
+		FxTrailElem* trailElem = nullptr;
+		FxTrailElem* remoteTrailElem = nullptr;
+		bool removable = trailElemHandle == trail->firstElemHandle;
+
+		while (trailElemHandle != trailElemHandleStop)
+		{
+			if (trailElemHandle == UINT16_MAX)
+			{
+				Assert();
+			}
+
+			remoteTrailElem = FX_TrailElemFromHandle(system, trailElemHandle);
+			trailElem = remoteTrailElem;
+			std::uint16_t trailElemHandleNext = remoteTrailElem->nextTrailElemHandle;
+
+			if (FX_UpdateTrailElement(system, effect, trail, remoteTrailElem, msecUpdateBegin, msecUpdateEnd))
+			{
+				removable = false;
+			}
+
+			if (removable && trailElemHandleLast != UINT16_MAX)
+			{
+				FX_FreeTrailElem(system, trailElemHandleLast, effect, trail);
+			}
+
+			trailElemHandleLast = trailElemHandle;
+			trailElemHandle = trailElemHandleNext;
+		}
+
+		if (trailElemHandleLast != UINT16_MAX && trailElemHandleLast == trail->lastElemHandle)
+		{
+			if (removable)
+			{
+				FX_FreeTrailElem(system, trailElemHandleLast, effect, trail);
+			}
+			else if ((effect->status & FX_STATUS_HAS_PENDING_LOOP_ELEMS) != 0)
+			{
+				if (!trailElem)
+				{
+					Assert();
+				}
+
+				trailElem->spawnDist = effect->distanceTraveled;
+				float basis[2][3] = {};
+				
+				FX_GetOriginForTrailElem(effect, 
+					&effect->def->elemDefs[static_cast<std::uint8_t>(trail->defIndex)],
+					frameNow, 
+					FX_ElemRandomSeed(effect->randomSeed, trailElem->msecBegin, static_cast<std::uint8_t>(trailElem->sequence)), 
+					trailElem->origin, 
+					basis[0],
+					basis[1]);
+
+				FX_TrailElem_CompressBasis(basis, trailElem->basis);
+			}
+		}
+	}
+
+	// checked :: utils::hook::detour(0x4880C0, fx_system::FX_UpdateEffectPartial, HK_JUMP);
+	void FX_UpdateEffectPartial(FxSystem* system, FxEffect* effect, int msecUpdateBegin, int msecUpdateEnd, float distanceTravelledBegin, float distanceTravelledEnd, unsigned __int16* elemHandleStart, unsigned __int16* elemHandleStop, volatile unsigned __int16* trailElemStart, volatile unsigned __int16* trailElemStop)
+	{
+		std::uint16_t startHandle = UINT16_MAX;
+		std::uint16_t stopHandle = UINT16_MAX;
+
+		if (effect->msecLastUpdate > msecUpdateEnd)
+		{
+			Assert();
+		}
+
+		if ((effect->status & FX_STATUS_HAS_PENDING_LOOP_ELEMS) != 0)
+		{
+			FX_ProcessLooping(system, effect, 0, effect->def->elemDefCountLooping, &effect->framePrev, &effect->frameNow, effect->msecBegin, msecUpdateBegin, msecUpdateEnd, distanceTravelledBegin, distanceTravelledEnd);
+			if (msecUpdateEnd - effect->msecBegin > effect->def->msecLoopingLife)
+			{
+				FX_StopEffect(system, effect);
+			}
+		}
+
+		for (unsigned int elemClass = 0; elemClass < 3; ++elemClass)
+		{
+			FX_UpdateEffectPartialForClass(system, effect, msecUpdateBegin, msecUpdateEnd, elemHandleStart[elemClass], elemHandleStop[elemClass], elemClass);
+		}
+
+		FxTrail* trail = nullptr;
+		unsigned int trailIter = 0;
+
+		for (std::uint16_t trailHandle = effect->firstTrailHandle; trailHandle != UINT16_MAX; trailHandle = trail->nextTrailHandle)
+		{
+			trail = FX_TrailFromHandle(system, trailHandle);
+			if (trailElemStart)
+			{
+				startHandle = trailElemStart[trailIter];
+			}
+
+			if (trailElemStop)
+			{
+				stopHandle = trailElemStop[trailIter];
+			}
+
+			FX_UpdateEffectPartialTrail(system, effect, trail, msecUpdateBegin, msecUpdateEnd, distanceTravelledBegin, distanceTravelledEnd, startHandle, stopHandle, &effect->frameNow);
+			++trailIter;
+		}
+
+		effect->msecLastUpdate = msecUpdateEnd;
+	}
+
+	// checked
+	void FX_UpdateEffect(FxSystem* system, FxEffect* effect)
+	{
+		if ((effect->status & UINT16_MAX) != 0)
+		{
+			if (effect->msecLastUpdate <= system->msecNow)
+			{
+				std::uint16_t lastElemHandle[3] = 
+				{
+					UINT16_MAX, UINT16_MAX, UINT16_MAX
+				};
+
+				const float distanceTravelledEnd = Vec3DistanceSq(effect->framePrev.origin, effect->frameNow.origin) + effect->distanceTraveled;
+				
+				FX_UpdateEffectPartial(system, effect, effect->msecLastUpdate, system->msecNow, effect->distanceTraveled, distanceTravelledEnd, effect->firstElemHandle, lastElemHandle, nullptr, nullptr);
+				FX_SortNewElemsInEffect(system, effect);
+
+				effect->distanceTraveled = distanceTravelledEnd;
+				memcpy(&effect->framePrev, &effect->frameNow, sizeof(effect->framePrev));
+			}
+		}
+	}
+
+	// checked
+	void FX_Update(FxSystem* system, bool nonBoltedEffectsOnly)
+	{
+		if (!system || system->isArchiving)
+		{
+			Assert();
+		}
+
+		for (int firstEffect = system->firstActiveEffect; firstEffect != system->firstNewEffect; ++firstEffect)
+		{
+			FxEffect* effect = FX_EffectFromHandle(system, system->allEffectHandles[firstEffect & 0x3FF]);
+			if (FX_ShouldProcessEffect(effect, system, nonBoltedEffectsOnly))
+			{
+				FX_UpdateEffect(system, effect);
+			}
+		}
+
+		if (system->needsGarbageCollection)
+		{
+			FX_RunGarbageCollectionAndPrioritySort(system);
+		}
+	}
+
+	// checked :: utils::hook::detour(0x488600, fx_system::FX_UpdateRemaining, HK_JUMP);
+	void FX_UpdateRemaining(FxCmd* cmd)
+	{
+		if (game::Dvar_FindVar("fx_enable")->current.enabled)
+		{
+			FX_Update(cmd->system, false);
+		}
+	}
+
+	void FX_EndUpdate(int localClientNum)
+	{
+		if(game::Dvar_FindVar("fx_enable")->current.enabled)
+		{
+			FxSystem* system = FX_GetSystem(localClientNum);
+			if (!system)
+			{
+				Assert();
+			}
+
+			memcpy(&system->cameraPrev, system, sizeof(system->cameraPrev));
+			if (!system->cameraPrev.isValid)
+			{
+				Assert();
+			}
+		}
+	}
+
+	void FX_AddNonSpriteDrawSurfs(FxCmd* cmd)
+	{
+		if (!cmd->system)
+		{
+			Assert();
+		}
+
+		if (game::Dvar_FindVar("fx_enable")->current.enabled && game::Dvar_FindVar("fx_draw")->current.enabled)
+		{
+			FX_SortEffects(cmd->system); // todo: check!
+			FX_DrawNonSpriteElems(cmd->system);
+		}
+	}
+
+	void FX_SpawnLoopingElems(FxSystem* system, FxEffect* effect, int elemDefIndex, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd, int msecWhenPlayed, int msecUpdateBegin, int msecUpdateEnd)
+	{
+		if (!effect || !effect->def)
+		{
+			Assert();
+		}
+
+		if (elemDefIndex >= (effect->def->elemDefCountOneShot + effect->def->elemDefCountLooping + effect->def->elemDefCountEmission))
+		{
+			Assert();
+		}
+
+		if (elemDefIndex >= effect->def->elemDefCountLooping && elemDefIndex < effect->def->elemDefCountLooping + effect->def->elemDefCountOneShot)
+		{
+			Assert();
+		}
+
+		if (msecWhenPlayed > msecUpdateBegin || msecUpdateBegin > msecUpdateEnd)
+		{
+			Assert();
+		}
+
+		FxElemDef* elemDef = &effect->def->elemDefs[elemDefIndex];
+		if (!(elemDef->elemType == FX_ELEM_TYPE_TRAIL))
+		{
+			if (msecUpdateEnd != 0x7FFFFFFF)
+			{
+				int updateMsec = msecUpdateEnd - msecUpdateBegin;
+				if (msecUpdateEnd - msecUpdateBegin > 128)
+				{
+					int maxUpdateMsec = FX_LimitStabilizeTimeForElemDef_Recurse(elemDef, 0, updateMsec) + 1;
+					elemDef = &effect->def->elemDefs[elemDefIndex];
+
+					if (updateMsec > maxUpdateMsec)
+					{
+						msecUpdateBegin = msecUpdateEnd - maxUpdateMsec;
+					}
+				}
+			}
+
+			const int intervalMsec = elemDef->spawn.looping.intervalMsec;
+			int spawnedCount = (msecUpdateBegin - msecWhenPlayed) / intervalMsec + 1;
+			int msecNextSpawn = msecWhenPlayed + spawnedCount * intervalMsec;
+
+			FxSpatialFrame frameWhenPlayed = {};
+			memcpy(&frameWhenPlayed, frameBegin, sizeof(frameWhenPlayed));
+
+			while (msecNextSpawn <= msecUpdateEnd && spawnedCount < elemDef->spawn.looping.count)
+			{
+				const float lerp = (float)(msecNextSpawn - msecUpdateBegin) / (float)(msecUpdateEnd - msecUpdateBegin);
+				FX_FrameLerp(frameBegin, frameEnd, &frameWhenPlayed, lerp);
+				FX_SpawnElem(system, effect, elemDefIndex, &frameWhenPlayed, msecNextSpawn, 0.0, spawnedCount);
+
+				msecNextSpawn += effect->def->elemDefs[elemDefIndex].spawn.looping.intervalMsec;
+				elemDef = &effect->def->elemDefs[elemDefIndex];
+				++spawnedCount;
+
+				if (msecNextSpawn > msecUpdateEnd)
+				{
+					break;
+				}
+			}
+		}
+	}
+
 	void FX_SpawnOneShotElems(FxSystem* system, FxEffect* effect, int elemDefIndex, FxSpatialFrame* frameWhenPlayed, int msecWhenPlayed)
 	{
 		if (!effect)
@@ -800,5 +1359,8 @@ namespace fx_system
 
 		FX_SetupCamera(&system->camera, cam->origin, axis, halfTanX, halfTanY, 0.0f);
 	}*/
+
+
+	
 
 }

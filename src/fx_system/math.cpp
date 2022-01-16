@@ -4,10 +4,29 @@
 						__debugbreak();		\
 					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__)
 
-#define LODWORD(x)  (*((DWORD*)&(x)))  // low dword
-
 namespace fx_system
 {
+	int Clamp(int val, int min, int max)
+	{
+		if (min >= max)
+		{
+			Assert();
+		}
+
+		int result = val;
+		if (val < min)
+		{
+			return min;
+		}
+
+		if (val > max)
+		{
+			result = max;
+		}
+
+		return result;
+	}
+
 	void AxisCopy(const float(*in)[3], float(*out)[3])
 	{
 		(*out)[0] = (*in)[0];
@@ -225,6 +244,16 @@ namespace fx_system
 		(*axis)[6] = xz + yw;
 		(*axis)[7] = yz - xw;
 		(*axis)[8] = 1.0f - (xx + yy);
+	}
+
+	float Vec3Distance(const float* p1, const float* p2)
+	{
+		float dir[3];
+		dir[0] = p2[0] - p1[0];
+		dir[1] = p2[1] - p1[1];
+		dir[2] = p2[2] - p1[2];
+
+		return Abs(dir);
 	}
 
 	float Vec3DistanceSq(const float* p1, const float* p2)

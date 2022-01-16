@@ -4,14 +4,6 @@
 						__debugbreak();		\
 					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__)
 
-#define LODWORD(x)  (*((DWORD*)&(x)))  // low dword
-
-// unimplemented features marked with:
-/*
- * #MARKS
- * #PHYS
- */
-
 namespace fx_system
 {
 	FxSystem fx_systemPool = {};
@@ -107,6 +99,7 @@ namespace fx_system
 		}
 	}
 
+	// checked
 	void FX_StopEffect(FxSystem* system, FxEffect* effect)
 	{
 		FxEffect* o_effect = effect;
@@ -516,7 +509,7 @@ namespace fx_system
 				FX_AddRefToEffect(system, effect);
 				remoteElem->defIndex = static_cast<char>(elemDefIndex);
 				remoteElem->sequence = static_cast<char>(sequence);
-				remoteElem->atRestFraction = (char)255;
+				remoteElem->atRestFraction = -1; //255;
 				remoteElem->emitResidual = 0;
 				remoteElem->msecBegin = msecBegin;
 
@@ -1167,6 +1160,7 @@ namespace fx_system
 		return static_cast<std::uint16_t>(((char*)item_slim - (char*)pool) / 4);
 	}
 
+	// checked
 	FxTrail* FX_TrailFromHandle(FxSystem* system, unsigned __int16 handle)
 	{
 		// if ( trailHandle >= 256u || (trailHandle & 1) != 0 )

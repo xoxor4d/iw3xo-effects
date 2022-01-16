@@ -2,12 +2,14 @@
 
 namespace fx_system
 {
+	int		Clamp(int val, int min, int max);
 	void	AxisCopy(const float(*in)[3], float(*out)[3]);
 	void	PerpendicularVector(const float* src, float* dst);
 	void	RotatePointAroundVector(float* dst, const float* dir, const float* point, const float degrees);
 	void	AxisToQuat(const float(*mat)[3], float* out);
 	void	UnitQuatToAxis(const float* quat, float(*axis)[3]);
 
+	float	Vec3Distance(const float* p1, const float* p2);
 	float	Vec3DistanceSq(const float* p1, const float* p2);
 	float	Vec3LengthSq(const float* v);
 	bool	Vec3IsNormalized(const float* v);

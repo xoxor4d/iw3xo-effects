@@ -4,8 +4,6 @@
 						__debugbreak();		\
 					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__)
 
-#define LODWORD(x)  (*((DWORD*)&(x)))  // low dword
-
 namespace fx_system
 {
 	// checked
