@@ -120,40 +120,46 @@ namespace fx_system
 		}
 	}
 
-	// todo: clean me up
+	// checked
 	void FX_SortNewElemsInEffect(FxSystem* system, FxEffect* effect)
 	{
-		FxElem* remoteElem = nullptr;
+		if (!system)
+		{
+			Assert();
+		}
 
 		std::uint16_t elemHandle = effect->firstElemHandle[0];
 		const std::uint16_t stopElemHandle = effect->firstSortedElemHandle;
 
-		if (elemHandle != stopElemHandle)
+		if (elemHandle != effect->firstSortedElemHandle)
 		{
-			effect->firstElemHandle[0] = stopElemHandle;
-			if (stopElemHandle != UINT16_MAX)
+			effect->firstElemHandle[0] = effect->firstSortedElemHandle;
+			if (effect->firstSortedElemHandle != UINT16_MAX)
 			{
-				*(std::int16_t*)&FX_ElemFromHandle(system, stopElemHandle)[1].atRestFraction = UINT16_MAX; //-1;
+				FX_ElemFromHandle(system, effect->firstSortedElemHandle)->prevElemHandleInEffect = UINT16_MAX;
 			}
 
-			do
+			while (true)
 			{
-				FxElem* elem = FX_ElemFromHandle(system, elemHandle);
-				//elemHandle = *(WORD*)&elem[1].defIndex;
-				elemHandle = *(&system->elems->___u0.item.nextElemHandleInEffect + 2 * elemHandle);
+				const auto elem = FX_ElemFromHandle(system, elemHandle);
+				elemHandle = elem->nextElemHandleInEffect;
+
 				FX_SortSpriteElemIntoEffect(system, effect, elem);
 
-			} while (elemHandle != stopElemHandle);
+				if (elemHandle == stopElemHandle)
+				{
+					break;
+				}
+			}
 
 			effect->firstSortedElemHandle = effect->firstElemHandle[0];
+			const FxElem* elem = nullptr;
 
-			for (elemHandle = effect->firstElemHandle[0]; 
-				 elemHandle != UINT16_MAX;
-				 //elemHandle = *(WORD*)&remoteElem[1].defIndex)
-				elemHandle = *(&system->elems->___u0.item.nextElemHandleInEffect + 2 * elemHandle))
+			for (std::uint16_t i = effect->firstElemHandle[0]; i != UINT16_MAX; i = elem->nextElemHandleInEffect)
 			{
-				remoteElem = FX_ElemFromHandle(system, elemHandle);
-				if (static_cast<std::uint8_t>(effect->def->elemDefs[ static_cast<std::uint8_t>(remoteElem->defIndex) ].elemType) > FX_ELEM_TYPE_LAST_SPRITE)
+				elem = FX_ElemFromHandle(system, i);
+				if(FX_GetEffectElemDef(effect, elem->defIndex)->elemType > FX_ELEM_TYPE_LAST_SPRITE)
+				
 				{
 					Assert();
 				}
@@ -202,24 +208,19 @@ namespace fx_system
 		//if (*((BYTE*)&firstEffect->boltAndSortOrder + 3) == 255)
 		if(firstEffect->boltAndSortOrder.sortOrder == 255u)
 		{
-			//if (*((BYTE*)&secondEffect->boltAndSortOrder + 3) == 255)
 			if (secondEffect->boltAndSortOrder.sortOrder == 255u)
 			{
 				return false;
 			}
 
-			//*((BYTE*)&firstEffect->boltAndSortOrder + 3) = FX_CalcRunnerParentSortOrder(firstEffect);
 			firstEffect->boltAndSortOrder.sortOrder = FX_CalcRunnerParentSortOrder(firstEffect);
 		}
 
-		//if (*((BYTE*)&secondEffect->boltAndSortOrder + 3) == 255)
 		if (secondEffect->boltAndSortOrder.sortOrder == 255u)
 		{
-			//*((BYTE*)&secondEffect->boltAndSortOrder + 3) = FX_CalcRunnerParentSortOrder(secondEffect);
 			secondEffect->boltAndSortOrder.sortOrder = FX_CalcRunnerParentSortOrder(secondEffect);
 		}
 
-		//return *((BYTE*)&firstEffect->boltAndSortOrder + 3) < *((BYTE*)&secondEffect->boltAndSortOrder + 3);
 		return firstEffect->boltAndSortOrder.sortOrder < secondEffect->boltAndSortOrder.sortOrder;
 	}
 

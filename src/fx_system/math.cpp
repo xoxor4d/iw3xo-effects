@@ -27,6 +27,21 @@ namespace fx_system
 		return result;
 	}
 
+	void SetIdentityAxis(float* axis)
+	{
+		axis[0] = 1.0;
+		axis[1] = 0.0;
+		axis[2] = 0.0;
+
+		axis[3] = 0.0;
+		axis[4] = 1.0;
+		axis[5] = 0.0;
+
+		axis[6] = 0.0;
+		axis[7] = 0.0;
+		axis[8] = 1.0;
+	}
+
 	void AxisCopy(const float(*in)[3], float(*out)[3])
 	{
 		(*out)[0] = (*in)[0];

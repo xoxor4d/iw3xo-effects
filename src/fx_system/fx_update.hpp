@@ -31,6 +31,9 @@ namespace fx_system
 	void				FX_UpdateElement_TruncateToElemEnd(FxUpdateElem* update, FxUpdateResult* outUpdateResult);
 	void				FX_UpdateElement_HandleEmitting(FxUpdateElem* update, FxSystem* system, FxElem* elem, float* elemOriginPrev, FxUpdateResult* outUpdateResult);
 
+	void				FX_UpdateSpotLightEffect(FxSystem* system, FxEffect* effect);
+	void				FX_UpdateSpotLight(FxCmd* cmd);
+
 	FxUpdateResult		FX_UpdateElementPosition_CollidingStep(int msecUpdateBegin, FxUpdateElem* update, FxSystem* system, int msecUpdateEnd, float* xyzWorldOld);
 	FxUpdateResult		FX_UpdateElementPosition_Colliding(FxUpdateElem* update, FxSystem* system);
 	FxUpdateResult		FX_UpdateElementPosition(FxUpdateElem* update, FxSystem* system);

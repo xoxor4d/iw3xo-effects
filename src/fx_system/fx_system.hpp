@@ -7,6 +7,7 @@ namespace fx_system
 
 	FxSystem*		FX_GetSystem(int localClientNum);
 	bool			FX_GetEffectStatus(FxEffect* effect);
+	FxElemDef*		FX_GetEffectElemDef(const FxEffect* effect, int index);
 
 	void			FX_BeginLooping(FxSystem* system, FxEffect* effect, int elemDefFirst, int elemDefCount, FxSpatialFrame* frameWhenPlayed, FxSpatialFrame* frameNow, int msecWhenPlayed, int msecNow);
 	void			FX_StartNewEffect(FxSystem* system, FxEffect* effect);

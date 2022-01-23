@@ -6,6 +6,20 @@
 
 namespace fx_system
 {
+	void R_ProcessCmd_UpdateFxSpotLight(FxCmd* cmd)
+	{
+		FX_UpdateSpotLight(cmd);
+	}
+
+	void R_ProcessCmd_UpdateFxNonDependent(FxCmd* cmd)
+	{
+		if (game::Dvar_FindVar("fx_enable")->current.enabled)
+		{
+			FX_Update(cmd->system, true);
+		}
+	}
+
+	// checked
 	void R_ProcessCmd_UpdateFxRemaining(FxCmd* cmd)
 	{
 		FxGenerateVertsCmd genVertsCmd = {};
@@ -18,81 +32,129 @@ namespace fx_system
 		Sys_DoWorkerCmd(WRKCMD_GENERATE_FX_VERTS, &genVertsCmd);
 	}
 
-	// #ENV_DEPENDENT
 	void Sys_DoWorkerCmd(WorkerCmdType type, void* cmd)
 	{
 		switch (type)
 		{
-		case WRKCMD_FIRST_FRONTEND:
-			Assert(); //R_ProcessCmd_UpdateFxSpotLight((int)cmd);
+		case WRKCMD_UPDATE_FX_SPOT_LIGHT:
+
+			R_ProcessCmd_UpdateFxSpotLight(static_cast<FxCmd*>(cmd));
 			break;
+
 
 		case WRKCMD_UPDATE_FX_NON_DEPENDENT:
-			Assert(); //R_ProcessCmd_UpdateFxNonDependent((FxSystem**)cmd);
+
+			R_ProcessCmd_UpdateFxNonDependent(static_cast<FxCmd*>(cmd));
 			break;
 
+
 		case WRKCMD_UPDATE_FX_REMAINING:
+
 			R_ProcessCmd_UpdateFxRemaining(static_cast<FxCmd*>(cmd));
 			break;
 
+
 		case WRKCMD_DPVS_CELL_STATIC:
-			Assert(); //R_AddCellStaticSurfacesInFrustumCmd((int)cmd);
+
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4EC670)(cmd); //	R_AddCellStaticSurfacesInFrustumCmd((DpvsStaticCellCmd *)cmd);
 			break;
 
+
 		case WRKCMD_DPVS_CELL_SCENE_ENT:
-			Assert(); //R_AddCellSceneEntSurfacesInFrustumCmd(savedregs, (int*)cmd);
+
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4FDD70)(cmd); // R_AddCellSceneEntSurfacesInFrustumCmd((GfxWorldDpvsPlanes *)cmd);
 			break;
+
 
 		case WRKCMD_DPVS_CELL_DYN_MODEL:
 			return;
 
+
 		case WRKCMD_DPVS_CELL_DYN_BRUSH:
-			Assert(); //R_AddCellDynBrushSurfacesInFrustumCmd((int)cmd);
+			
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4C0100)(cmd); // R_AddCellDynBrushSurfacesInFrustumCmd((DpvsDynamicCellCmd *)cmd);
 			break;
+
 
 		case WRKCMD_DPVS_ENTITY:
-			Assert(); //R_AddEntitySurfacesInFrustumCmd((int)cmd);
+			
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4FDC00)(cmd); // R_AddEntitySurfacesInFrustumCmd((DpvsEntityCmd *)cmd);
 			break;
+
 
 		case WRKCMD_ADD_SCENE_ENT:
-			Assert(); //R_AddSceneEntCmd(*(DWORD*)cmd);
+			
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4BDFA0)(cmd); // R_AddAllSceneEntSurfacesCamera(*(GfxViewInfo **)cmd);
 			break;
+
 
 		case WRKCMD_SPOT_SHADOW_ENT:
-			Assert(); //R_AddSpotShadowEntCmd((int)cmd);
+			
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4DD400)(cmd); // R_AddSpotShadowEntCmd((GfxSpotShadowEntCmd *)cmd);
 			break;
+
 
 		case WRKCMD_SHADOW_COOKIE:
-			Assert(); //R_AddShadowCookies((int)cmd);
+			
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4E2FD0)(cmd);// R_GenerateShadowCookiesCmd((ShadowCookieCmd *)cmd);
 			break;
+
 
 		case WRKCMD_BOUNDS_ENT_DELAYED:
-			Assert(); //R_UpdateGfxEntityBoundsCmd(cmd);
+			
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4EB580)(cmd); // R_UpdateGfxEntityBoundsCmd(cmd);
 			break;
+
 
 		case WRKCMD_SKIN_ENT_DELAYED:
-			Assert(); //R_SkinGfxEntityCmd((int*)cmd);
+			
+			// #ENV_DEPENDENT - not effect related
+			utils::hook::call<void(__cdecl)(void*)>(0x4EAA20)(cmd); // R_SkinGfxEntityCmd(cmd);
 			break;
+
 
 		case WRKCMD_GENERATE_FX_VERTS:
-			Assert();
-			//if (!dx.deviceLost)
-			//{
-			//	FX_GenerateVerts((FxGenerateVertsCmd*)cmd);// FX_DrawCallback
-			//}
+
+			if (!game::dx.deviceLost)
+			{
+				// todo
+				// FX_GenerateVerts((FxGenerateVertsCmd *)cmd);
+
+				// #ENV_DEPENDENT
+				utils::hook::call<void(__cdecl)(void*)>(0x48E7F0)(cmd); // FX_GenerateVerts
+			}
 			break;
+
 
 		case WRKCMD_GENERATE_MARK_VERTS:
-			Assert();
-			//if (!dx.deviceLost)
-			//{
-			//	FX_GenerateMarkVertsForWorldFX_GenerateMarkVertsForWorld(*((DWORD*)cmd + 1));// FxCmd => localclientnum
-			//}
-			break;
+			return;
+
+			/*if (!game::dx.deviceLost)
+			{
+				// #MARKS
+				// FX_GenerateMarkVertsForWorld(*((_DWORD *)cmd + 1)); // (localclientnum)
+
+				// #ENV_DEPENDENT
+				// utils::hook::call<void(__cdecl)(int)>(0x4839E0)(0); // FX_GenerateMarkVertsForWorld
+
+				
+			}
+			break;*/
 
 		case WRKCMD_SKIN_CACHED_STATICMODEL:
-			Assert(); //R_SkinXModelCmd(savedregs, (int*)cmd);
+
+			// #ENV_DEPENDENT
+			utils::hook::call<void(__cdecl)(int)>(0x4FD230)(0); // R_SkinXModelCmd(cmd);
 			break;
+
 
 		default:
 			Assert();

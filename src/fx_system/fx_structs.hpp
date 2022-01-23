@@ -2,6 +2,9 @@
 
 #define LODWORD(x)  (*((DWORD*)&(x)))  // low dword
 
+// undef in env != the stock fx editor
+#define FXEDITOR
+
 // labels:
 /*
  * #MARKS

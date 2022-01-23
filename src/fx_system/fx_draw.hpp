@@ -11,6 +11,9 @@ namespace fx_system
 	void			FX_DrawElem_Light(FxDrawState* draw);
 	void			FX_DrawElem_SpotLight(FxDrawState* draw);
 
+	void			FX_DrawSpotLightEffect(FxSystem* system, FxEffect* effect, int msecDraw);
+	void			FX_DrawSpotLight(FxSystem* system);
+
 	FxElemVisuals	FX_GetElemVisuals(FxElemDef* elemDef, int randomSeed);
 	void			FX_SetupVisualState(FxElemDef* elemDef, FxEffect* effect, int randomSeed, float normTimeUpdateEnd, FxElemPreVisualState* preVisState);
 	void			FX_EvaluateSize(FxElemPreVisualState* preVisState, FxElemVisualState* visState);
@@ -18,7 +21,10 @@ namespace fx_system
 	float			FX_CalculateFade(float dist, FxFloatRange* range);
 	void			FX_EvaluateDistanceFade(FxDrawState* draw);
 
+	void			FX_FillGenerateVertsCmd(int localClientNum, FxGenerateVertsCmd* cmd);
+
 	void			FX_DrawElement_Setup_1_(FxDrawState* draw, int msecBegin, int sequence, float* origin, float* outRealNormTime);
+	void			FX_DrawElement(FxElemDef* elemDef, FxElem* elem, FxDrawState* state);
 	void			FX_DrawNonSpriteEffect(int elemClass, int drawTime, FxSystem* system, FxEffect* effect);
 	void			FX_DrawNonSpriteElems(FxSystem* system);
 

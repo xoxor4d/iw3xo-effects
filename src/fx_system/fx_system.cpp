@@ -12,7 +12,11 @@ namespace fx_system
 
 	FxSystem* FX_GetSystem([[maybe_unused]] int localClientNum)
 	{
+#ifdef FXEDITOR
+		return &game::fx_systemPool;
+#else
 		return &fx_systemPool;
+#endif
 	}
 
 	bool FX_GetEffectStatus(FxEffect* effect)
@@ -24,6 +28,11 @@ namespace fx_system
 		}
 
 		return effect->status == 1;
+	}
+
+	FxElemDef* FX_GetEffectElemDef(const FxEffect* effect, int index)
+	{
+		return &effect->def->elemDefs[index];
 	}
 
 	// checked :: utils::hook::detour(0x487880, fx_system::FX_BeginLooping, HK_JUMP);

@@ -633,6 +633,92 @@ namespace fx_system
 		}
 	}
 
+	void FX_UpdateSpotLightEffectPartial(FxSystem* system, FxEffect* effect, int msecUpdateBegin, int msecUpdateEnd)
+	{
+		if (system->activeSpotLightEffectCount != 1)
+		{
+			Assert();
+		}
+
+		if (effect != FX_EffectFromHandle(system, system->activeSpotLightEffectHandle))
+		{
+			Assert();
+		}
+
+		if (effect->msecLastUpdate > msecUpdateEnd)
+		{
+			Assert();
+		}
+
+		if (system->activeSpotLightElemCount)
+		{
+			const auto elem = FX_ElemFromHandle(system, system->activeSpotLightElemHandle);
+			if (FX_UpdateElement(system, effect, elem, msecUpdateBegin, msecUpdateEnd) == FX_UPDATE_REMOVE)
+			{
+				FX_FreeSpotLightElem(system, system->activeSpotLightElemHandle, effect);
+			}
+		}
+	}
+
+	void FX_UpdateSpotLightEffect(FxSystem* system, FxEffect* effect)
+	{
+		if ((effect->status & UINT16_MAX) != 0)
+		{
+			if (effect->msecLastUpdate <= system->msecNow)
+			{
+				system->activeSpotLightBoltDobj = *(WORD*)&effect->boltAndSortOrder & 0xFFF;
+				const float newDistanceTraveled = Vec3DistanceSq(effect->framePrev.origin, effect->frameNow.origin);
+				const float distanceTravelledEnd = newDistanceTraveled + effect->distanceTraveled;
+
+				std::uint16_t elemHandleStop[3] =
+				{
+					UINT16_MAX, UINT16_MAX, UINT16_MAX
+				};
+
+
+				FX_UpdateSpotLightEffectPartial(system, effect, effect->msecLastUpdate, system->msecNow);
+				FX_UpdateEffectPartial(system, effect, effect->msecLastUpdate, system->msecNow, effect->distanceTraveled, distanceTravelledEnd, effect->firstElemHandle, elemHandleStop, 0, 0);
+				FX_SortNewElemsInEffect(system, effect);
+
+				effect->distanceTraveled = distanceTravelledEnd;
+				memcpy(&effect->framePrev, &effect->frameNow, sizeof(effect->framePrev));
+			}
+		}
+	}
+
+	void FX_UpdateSpotLight(FxCmd* cmd)
+	{
+		if (game::Dvar_FindVar("fx_enable")->current.enabled)
+		{
+			auto system = cmd->system;
+			if (!cmd->system || system->isArchiving)
+			{
+				Assert();
+			}
+
+			if (system->activeSpotLightEffectCount > 0)
+			{
+				if (system->activeSpotLightEffectCount != 1)
+				{
+					Assert();
+				}
+
+				auto effect = FX_EffectFromHandle(system, system->activeSpotLightEffectHandle);
+				FX_UpdateSpotLightEffect(system, effect);
+			}
+
+			if (system->needsGarbageCollection)
+			{
+				FX_RunGarbageCollectionAndPrioritySort(system);
+			}
+
+			if (game::Dvar_FindVar("fx_draw")->current.enabled)
+			{
+				FX_DrawSpotLight(system);
+			}
+		}
+	}
+
 	FxUpdateResult FX_UpdateElementPosition_CollidingStep(int msecUpdateBegin, FxUpdateElem* update, [[maybe_unused]] FxSystem* system, int msecUpdateEnd, float* xyzWorldOld)
 	{
 		// CM_BoxTrace does nothing but this:
@@ -1065,7 +1151,7 @@ namespace fx_system
 				const float distanceTravelledEnd = Vec3DistanceSq(effect->framePrev.origin, effect->frameNow.origin) + effect->distanceTraveled;
 				
 				FX_UpdateEffectPartial(system, effect, effect->msecLastUpdate, system->msecNow, effect->distanceTraveled, distanceTravelledEnd, effect->firstElemHandle, lastElemHandle, nullptr, nullptr);
-				FX_SortNewElemsInEffect(system, effect);
+				FX_SortNewElemsInEffect(system, effect); //utils::hook::call<void(__cdecl)(FxSystem*, FxEffect*)>(0x48A500)(system, effect);
 
 				effect->distanceTraveled = distanceTravelledEnd;
 				memcpy(&effect->framePrev, &effect->frameNow, sizeof(effect->framePrev));
@@ -1105,6 +1191,7 @@ namespace fx_system
 		}
 	}
 
+	// checked
 	void FX_EndUpdate(int localClientNum)
 	{
 		if(game::Dvar_FindVar("fx_enable")->current.enabled)
@@ -1115,7 +1202,7 @@ namespace fx_system
 				Assert();
 			}
 
-			memcpy(&system->cameraPrev, system, sizeof(system->cameraPrev));
+			memcpy(&system->cameraPrev, &system->camera, sizeof(system->cameraPrev));
 			if (!system->cameraPrev.isValid)
 			{
 				Assert();

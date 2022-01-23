@@ -24,39 +24,106 @@ namespace fx_system
 
 	void FX_DrawElem_BillboardSprite(FxDrawState* draw)
 	{
-		Assert();
+		//Assert();
+
+		// #ENV_DEPENDENT
+		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CBB0)(draw);
 	}
 
 	void FX_DrawElem_OrientedSprite(FxDrawState* draw)
 	{
-		Assert();
+		//Assert();
+
+		// #ENV_DEPENDENT
+		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CC40)(draw);
 	}
 
 	void FX_DrawElem_Tail(FxDrawState* draw)
 	{
-		Assert();
+		//Assert();
+
+		// #ENV_DEPENDENT
+		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CF90)(draw);
 	}
 
 	void FX_DrawElem_Cloud(FxDrawState* draw)
 	{
-		Assert();
+		//Assert();
+
+		// #ENV_DEPENDENT
+		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D2D0)(draw);
 	}
 
 	void FX_DrawElem_Model(FxDrawState* draw)
 	{
-		Assert();
+		//Assert();
+
+		// #ENV_DEPENDENT
+		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D460)(draw);
 	}
 
 	void FX_DrawElem_Light(FxDrawState* draw)
 	{
-		Assert();
+		//Assert();
+
+		// #ENV_DEPENDENT
+		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D5B0)(draw);
 	}
 
 	void FX_DrawElem_SpotLight(FxDrawState* draw)
 	{
-		Assert();
+		//Assert();
+
+		// #ENV_DEPENDENT
+		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D640)(draw);
 	}
 
+	void FX_DrawSpotLightEffect(FxSystem* system, FxEffect* effect, int msecDraw)
+	{
+		if (system->activeSpotLightEffectCount <= 0 || system->activeSpotLightElemCount <= 0)
+		{
+			Assert();
+		}
+
+		FxDrawState drawState = {};
+		drawState.effect = effect;
+		drawState.system = system;
+		drawState.msecDraw = msecDraw;
+
+		FxElem* elem = FX_ElemFromHandle(system, system->activeSpotLightElemHandle);
+		FxElemDef* elemDef = &effect->def->elemDefs[static_cast<std::uint8_t>(elem->defIndex)];
+
+		if (elemDef->elemType != FX_ELEM_TYPE_SPOT_LIGHT)
+		{
+			Assert();
+		}
+
+		FX_DrawElement(elemDef, elem, &drawState);
+	}
+
+	void FX_DrawSpotLight(FxSystem* system)
+	{
+		if (!system || !system->camera.isValid || system->isArchiving)
+		{
+			Assert();
+		}
+
+		if (system->activeSpotLightElemCount > 0)
+		{
+			if (system->activeSpotLightEffectCount != 1 || system->activeSpotLightElemCount != 1)
+			{
+				Assert();
+			}
+
+			auto effect = FX_EffectFromHandle(system, system->activeSpotLightEffectHandle);
+			FX_DrawSpotLightEffect(system, effect, system->msecDraw);
+		}
+
+		if (system->needsGarbageCollection)
+		{
+			FX_RunGarbageCollectionAndPrioritySort(system);
+		}
+	}
 
 	FxElemVisuals FX_GetElemVisuals(FxElemDef* elemDef, int randomSeed)
 	{
@@ -160,6 +227,25 @@ namespace fx_system
 
 			draw->preVisState.distanceFade = static_cast<std::int64_t>(end * 255.0f + 0.5f);
 		}
+	}
+
+	void FX_FillGenerateVertsCmd(int localClientNum, FxGenerateVertsCmd* cmd)
+	{
+		if (!cmd)
+		{
+			Assert();
+		}
+
+		cmd->system = FX_GetSystem(localClientNum);
+		cmd->beamInfo = nullptr;
+		cmd->postLightInfo = nullptr;
+		cmd->spriteInfo = nullptr;
+		cmd->localClientNum = localClientNum;
+		cmd->vieworg[0] = 0.0f;
+		cmd->vieworg[1] = 0.0f;
+		cmd->vieworg[2] = 0.0f;
+
+		SetIdentityAxis(cmd->viewaxis[0]);
 	}
 
 	void FX_DrawElement_Setup_1_(FxDrawState* draw, int msecBegin, int sequence, float* origin, float* outRealNormTime)
