@@ -33,6 +33,11 @@ namespace fx_system
 
 	unsigned int	FX_CullElementForDraw_FrustumPlaneCount(FxDrawState* draw);
 	bool			FX_CullElementForDraw_Sprite(FxDrawState* draw);
+	bool			FX_CullElementForDraw_Tail(FxDrawState* draw);
+
+	bool			FX_CullSphere(FxCamera* camera, unsigned int frustumPlaneCount, const float* posWorld, float radius);
+	bool			FX_CullCylinder(FxCamera* camera, unsigned int frustumPlaneCount, const float* posWorld0, const float* posWorld1, float radius);
+	
 
 	void			FX_DrawSpriteEffect(FxSystem* system, FxEffect* effect, int drawTime);
 	void			FX_DrawTrailsForEffect(FxSystem* system, FxEffect* effect, int drawTime);

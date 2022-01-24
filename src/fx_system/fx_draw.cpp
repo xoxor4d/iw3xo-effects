@@ -56,18 +56,43 @@ namespace fx_system
 
 	void FX_DrawElem_OrientedSprite(FxDrawState* draw)
 	{
-		//Assert();
+		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CC40)(draw);
 
-		// #ENV_DEPENDENT
-		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CC40)(draw);
+		if (!FX_CullElementForDraw_Sprite(draw))
+		{
+			FX_GenSpriteVerts(draw, draw->orient.axis[0], draw->orient.axis[1], draw->orient.axis[2]);
+		}
 	}
 
 	void FX_DrawElem_Tail(FxDrawState* draw)
 	{
-		//Assert();
-
 		// #ENV_DEPENDENT
-		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CF90)(draw);
+		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CF90)(draw);
+
+		FX_GetVelocityAtTime(draw->elemDef, draw->randomSeed, draw->msecLifeSpan, draw->msecElapsed, &draw->orient, draw->elem->baseVel, draw->velDirWorld);
+		Vec3Normalize(draw->velDirWorld);
+
+		if (!FX_CullElementForDraw_Tail(draw))
+		{
+			draw->posWorld[0] = draw->velDirWorld[0] * -draw->visState.size[1] + draw->posWorld[0];
+			draw->posWorld[1] = draw->velDirWorld[1] * -draw->visState.size[1] + draw->posWorld[1];
+			draw->posWorld[2] = draw->velDirWorld[2] * -draw->visState.size[1] + draw->posWorld[2];
+
+			const float deltaCamera[3] =
+			{
+				draw->camera->origin[0] - draw->posWorld[0],
+				draw->camera->origin[1] - draw->posWorld[1],
+				draw->camera->origin[2] - draw->posWorld[2]
+			};
+
+			float tangent[3] = {};
+			Vec3Cross(draw->velDirWorld, deltaCamera, tangent);
+			Vec3Normalize(tangent);
+
+			float normal[3] = {};
+			Vec3Cross(tangent, draw->velDirWorld, normal);
+			FX_GenSpriteVerts(draw, normal, tangent, draw->velDirWorld);
+		}
 	}
 
 	void FX_DrawElem_Cloud(FxDrawState* draw)
@@ -553,6 +578,83 @@ namespace fx_system
 			return true;
 		}
 		
+		return false;
+	}
+
+	bool FX_CullElementForDraw_Tail(FxDrawState* draw)
+	{
+		if (game::Dvar_FindVar("fx_cull_elem_draw")->current.enabled)
+		{
+			unsigned int frustumPlaneCount = FX_CullElementForDraw_FrustumPlaneCount(draw);
+
+			float endpoint[3] =
+			{
+				draw->velDirWorld[0] * (draw->visState.size[1] * -2.0f) + draw->posWorld[0],
+				draw->velDirWorld[1] * (draw->visState.size[1] * -2.0f) + draw->posWorld[1],
+				draw->velDirWorld[2] * (draw->visState.size[1] * -2.0f) + draw->posWorld[2]
+			};
+
+			if (FX_CullCylinder(draw->camera, frustumPlaneCount, draw->posWorld, endpoint, draw->visState.size[0]))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool FX_CullSphere(FxCamera* camera, unsigned int frustumPlaneCount, const float* posWorld, float radius)
+	{
+		if (!camera->isValid || frustumPlaneCount != camera->frustumPlaneCount && frustumPlaneCount != 5)
+		{
+			Assert();
+		}
+
+		for (unsigned int planeIndex = 0; planeIndex < frustumPlaneCount; ++planeIndex)
+		{
+			if (!Vec3IsNormalized(camera->frustum[planeIndex]))
+			{
+				Assert();
+			}
+
+			if (-radius >= 
+				(camera->frustum[planeIndex][0] * posWorld[0]) +
+				(camera->frustum[planeIndex][1] * posWorld[1]) +
+				(camera->frustum[planeIndex][2] * posWorld[2]) - camera->frustum[planeIndex][3])
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool FX_CullCylinder(FxCamera* camera, unsigned int frustumPlaneCount, const float* posWorld0, const float* posWorld1, float radius)
+	{
+		if (!camera->isValid || frustumPlaneCount != camera->frustumPlaneCount && frustumPlaneCount != 5)
+		{
+			Assert();
+		}
+
+		for (unsigned int planeIndex = 0; planeIndex < frustumPlaneCount; ++planeIndex)
+		{
+			if (!Vec3IsNormalized(camera->frustum[planeIndex]))
+			{
+				Assert();
+			}
+
+			if (( camera->frustum[planeIndex][0] * posWorld0[0]
+				+ camera->frustum[planeIndex][1] * posWorld0[1]
+				+ camera->frustum[planeIndex][2] * posWorld0[2] - camera->frustum[planeIndex][3]) <= -radius
+
+				&& (( camera->frustum[planeIndex][0] * posWorld1[0]
+					+ camera->frustum[planeIndex][1] * posWorld1[1]
+					+ camera->frustum[planeIndex][2] * posWorld1[2]) - camera->frustum[planeIndex][3]) <= -radius)
+			{
+				return true;
+			}
+		}
+
 		return false;
 	}
 
