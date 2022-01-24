@@ -14,7 +14,12 @@ namespace fx_system
 	void			FX_DrawSpotLightEffect(FxSystem* system, FxEffect* effect, int msecDraw);
 	void			FX_DrawSpotLight(FxSystem* system);
 
+	void			FX_SetPlacement(game::GfxScaledPlacement* placement, FxDrawState* draw);
+	void			FX_GetElemAxis(FxElemDef* elemDef, int randomSeed, game::orientation_t* orient, float msecElapsed, float(*axis)[3]);
+	void			FX_AnglesToOrientedAxis(float(*axisOut)[3], const float* anglesInRad, game::orientation_t* orient);
+
 	void			FX_GetSpriteTexCoords(FxDrawState* draw, float* s0, float* ds, float* t0, float* dt);
+	float			FX_GetMsecForSamplingAxis(float msecElapsed, float msecLifeSpan, int atRestFraction);
 
 	FxElemVisuals	FX_GetElemVisuals(FxElemDef* elemDef, int randomSeed);
 	void			FX_SetupVisualState(FxElemDef* elemDef, FxEffect* effect, int randomSeed, float normTimeUpdateEnd, FxElemPreVisualState* preVisState);
@@ -34,6 +39,7 @@ namespace fx_system
 	unsigned int	FX_CullElementForDraw_FrustumPlaneCount(FxDrawState* draw);
 	bool			FX_CullElementForDraw_Sprite(FxDrawState* draw);
 	bool			FX_CullElementForDraw_Tail(FxDrawState* draw);
+	bool			FX_CullElementForDraw_Cloud(FxDrawState* draw);
 
 	bool			FX_CullSphere(FxCamera* camera, unsigned int frustumPlaneCount, const float* posWorld, float radius);
 	bool			FX_CullCylinder(FxCamera* camera, unsigned int frustumPlaneCount, const float* posWorld0, const float* posWorld1, float radius);

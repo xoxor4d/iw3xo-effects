@@ -518,12 +518,12 @@ namespace fx_system
 				FX_AddRefToEffect(system, effect);
 				remoteElem->defIndex = static_cast<char>(elemDefIndex);
 				remoteElem->sequence = static_cast<char>(sequence);
-				remoteElem->atRestFraction = -1; //255;
+				remoteElem->atRestFraction = -1;
 				remoteElem->emitResidual = 0;
 				remoteElem->msecBegin = msecBegin;
 
-				
-				if (randomSeed != FX_ElemRandomSeed(effect->randomSeed, msecBegin, remoteElem->sequence))
+				// should be remoteElem->sequence? casting sequence "128" to char results in -128 tho .. can throw an assert here
+				if (randomSeed != FX_ElemRandomSeed(effect->randomSeed, msecBegin, sequence))
 				{
 					Assert();
 				}

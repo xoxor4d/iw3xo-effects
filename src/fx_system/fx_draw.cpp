@@ -23,6 +23,7 @@ namespace fx_system
 
 	// ----------------------
 
+	// checked
 	void FX_DrawElem_BillboardSprite(FxDrawState* draw)
 	{
 		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CBB0)(draw);
@@ -54,6 +55,7 @@ namespace fx_system
 		}
 	}
 
+	// checked
 	void FX_DrawElem_OrientedSprite(FxDrawState* draw)
 	{
 		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CC40)(draw);
@@ -64,9 +66,9 @@ namespace fx_system
 		}
 	}
 
+	// checked
 	void FX_DrawElem_Tail(FxDrawState* draw)
 	{
-		// #ENV_DEPENDENT
 		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CF90)(draw);
 
 		FX_GetVelocityAtTime(draw->elemDef, draw->randomSeed, draw->msecLifeSpan, draw->msecElapsed, &draw->orient, draw->elem->baseVel, draw->velDirWorld);
@@ -95,18 +97,65 @@ namespace fx_system
 		}
 	}
 
+	// checked
 	void FX_DrawElem_Cloud(FxDrawState* draw)
 	{
-		//Assert();
+		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D2D0)(draw);
 
-		// #ENV_DEPENDENT
-		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D2D0)(draw);
+		if (game::Dvar_FindVar("fx_drawClouds")->current.enabled)
+		{
+			FX_GetVelocityAtTime(draw->elemDef, draw->randomSeed, draw->msecLifeSpan, draw->msecElapsed, &draw->orient, draw->elem->baseVel, draw->velDirWorld);
+			Vec3Normalize(draw->velDirWorld);
+
+			const float rnd = fx_randomTable[27 + draw->preVisState.randomSeed];
+
+			const float graph_a = rnd * draw->preVisState.refState->amplitude.scale + draw->preVisState.refState->base.scale;
+			const float graph_b = rnd * draw->preVisState.refState[1].amplitude.scale + draw->preVisState.refState[1].base.scale;
+
+			draw->visState.scale = draw->preVisState.sampleLerpInv * graph_a + draw->preVisState.sampleLerp * graph_b;
+
+			if (draw->visState.scale != 0.0f && !FX_CullElementForDraw_Cloud(draw))
+			{
+				++draw->system->gfxCloudCount;
+
+				FxElemVisuals visuals;
+				visuals.material = FX_GetElemVisuals(draw->elemDef, draw->randomSeed).material;
+
+				if (!visuals.material)
+				{
+					Assert();
+				}
+
+#ifdef FXEDITOR // #ENV_DEPENDENT
+				// R_AddParticleCloudToScene(visuals);
+				game::GfxParticleCloud* cloud = utils::hook::call<game::GfxParticleCloud* (__cdecl)(game::Material*)>(0x49FDC0)(visuals.material);
+#else
+				Assert();
+#endif
+
+				if (cloud)
+				{
+					FX_EvaluateVisualState(&draw->preVisState, draw->msecLifeSpan, &draw->visState);
+					FX_SetPlacement(&cloud->placement, draw);
+
+					cloud->color.array[0] = draw->visState.color[0];
+					cloud->color.array[1] = draw->visState.color[1];
+					cloud->color.array[2] = draw->visState.color[2];
+					cloud->color.array[3] = draw->visState.color[3];
+
+					cloud->radius[0] = draw->visState.size[0];
+					cloud->radius[1] = draw->visState.size[1];
+
+					cloud->endpos[0] = draw->posWorld[0] - draw->velDirWorld[0];
+					cloud->endpos[1] = draw->posWorld[1] - draw->velDirWorld[1];
+					cloud->endpos[2] = draw->posWorld[2] - draw->velDirWorld[2];
+				}
+			}
+		}
 	}
 
 	void FX_DrawElem_Model(FxDrawState* draw)
 	{
-		//Assert();
-
 		// #ENV_DEPENDENT
 		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D460)(draw);
 	}
@@ -172,6 +221,65 @@ namespace fx_system
 		{
 			FX_RunGarbageCollectionAndPrioritySort(system);
 		}
+	}
+
+	void FX_SetPlacement(game::GfxScaledPlacement* placement, FxDrawState* draw)
+	{
+		float axis[3][3];
+
+		const float msecElapsed = FX_GetMsecForSamplingAxis(draw->msecElapsed, draw->msecLifeSpan, static_cast<std::uint8_t>(draw->elem->atRestFraction));
+		FX_GetElemAxis(draw->elemDef, draw->randomSeed, &draw->orient, msecElapsed, axis);
+		AxisToQuat(axis, placement->base.quat);
+
+		placement->base.origin[0] = draw->posWorld[0];
+		placement->base.origin[1] = draw->posWorld[1];
+		placement->base.origin[2] = draw->posWorld[2];
+		placement->scale = draw->visState.scale;
+	}
+
+	void FX_GetElemAxis(FxElemDef* elemDef, int randomSeed, game::orientation_t* orient, float msecElapsed, float(*axis)[3])
+	{
+		float angles[3];
+
+		angles[0] = fx_randomTable[12 + randomSeed] * elemDef->spawnAngles[0].amplitude + elemDef->spawnAngles[0].base;
+		angles[1] = fx_randomTable[13 + randomSeed] * elemDef->spawnAngles[1].amplitude + elemDef->spawnAngles[1].base;
+		angles[2] = fx_randomTable[14 + randomSeed] * elemDef->spawnAngles[2].amplitude + elemDef->spawnAngles[2].base;
+
+		angles[0] = (fx_randomTable[3 + randomSeed] * elemDef->angularVelocity[0].amplitude + elemDef->angularVelocity[0].base) * msecElapsed + angles[0];
+		angles[1] = (fx_randomTable[4 + randomSeed] * elemDef->angularVelocity[1].amplitude + elemDef->angularVelocity[1].base) * msecElapsed + angles[1];
+		angles[2] = (fx_randomTable[5 + randomSeed] * elemDef->angularVelocity[2].amplitude + elemDef->angularVelocity[2].base) * msecElapsed + angles[2];
+
+		FX_AnglesToOrientedAxis(axis, angles, orient);
+	}
+
+	void FX_AnglesToOrientedAxis(float(*axisOut)[3], const float* anglesInRad, game::orientation_t* orient)
+	{
+		float localDir[3];
+
+		float cy = cos(anglesInRad[1]);
+		float sy = sin(anglesInRad[1]);
+
+		float cp = cos(anglesInRad[0]);
+		float sp = sin(anglesInRad[0]);
+
+		float cr = cos(anglesInRad[2]);
+		float sr = sin(anglesInRad[2]);
+
+		localDir[0] = cp * cy;
+		localDir[1] = cp * sy;
+		localDir[2] = -sp;
+
+		FX_OrientationDirToWorldDir(orient, localDir, (float*)axisOut);
+		localDir[0] = ((sr * sp) * cy) - (cr * sy);
+		localDir[1] = ((sr * sp) * sy) + (cr * cy);
+		localDir[2] = sr * cp;
+
+		FX_OrientationDirToWorldDir(orient, localDir, &(*axisOut)[3]);
+		localDir[0] = ((cr * sp) * cy) + (sr * sy);
+		localDir[1] = ((cr * sp) * sy) - (sr * cy);
+		localDir[2] = cr * cp;
+
+		FX_OrientationDirToWorldDir(orient, localDir, &(*axisOut)[6]);
 	}
 
 	// checked
@@ -249,6 +357,24 @@ namespace fx_system
 		const auto row_idx = static_cast<float>((1 << elemDef->atlas.rowIndexBits));
 		*dt = (1.0f / row_idx);
 		*t0 = (1.0f / row_idx) * (float)(atlasIndex >> elemDef->atlas.colIndexBits);
+	}
+
+	float FX_GetMsecForSamplingAxis(float msecElapsed, float msecLifeSpan, int atRestFraction)
+	{
+		const float msecAtRest = static_cast<float>(atRestFraction) * msecLifeSpan * 0.0039215689f;
+		const float msecSinceAtRest = msecElapsed - msecAtRest;
+
+		if (msecElapsed - msecAtRest <= 0.0f)
+		{
+			return msecElapsed;
+		}
+
+		if (msecSinceAtRest < 300.0f)
+		{
+			return msecElapsed - msecSinceAtRest * msecSinceAtRest * 0.0016666667f;
+		}
+
+		return msecAtRest + 150.0f;
 	}
 
 
@@ -595,6 +721,20 @@ namespace fx_system
 			};
 
 			if (FX_CullCylinder(draw->camera, frustumPlaneCount, draw->posWorld, endpoint, draw->visState.size[0]))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool FX_CullElementForDraw_Cloud(FxDrawState* draw)
+	{
+		if (game::Dvar_FindVar("fx_cull_elem_draw")->current.enabled)
+		{
+			const unsigned int frustumPlaneCount = FX_CullElementForDraw_FrustumPlaneCount(draw);
+			if (FX_CullSphere(draw->camera, frustumPlaneCount, draw->posWorld, draw->visState.scale + (draw->visState.size[0] - draw->visState.size[1]) < 0.0f ? draw->visState.size[1] : draw->visState.size[0]))
 			{
 				return true;
 			}
