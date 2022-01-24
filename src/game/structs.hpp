@@ -1094,28 +1094,123 @@ namespace game
 		int plumeLimit;
 	};
 
+	struct GfxModelLightingPatch
+	{
+		unsigned __int16 modelLightingIndex;
+		char primaryLightWeight;
+		char colorsCount;
+		char groundLighting[4];
+		unsigned __int16 colorsWeight[8];
+		unsigned __int16 colorsIndex[8];
+	};
+
+	struct GfxBackEndPrimitiveData
+	{
+		int hasSunDirChanged;
+	};
+
+	struct FxMarkMeshData
+	{
+		unsigned int triCount;
+		unsigned __int16* indices;
+		unsigned __int16 modelIndex;
+		char modelTypeAndSurf;
+		char pad0;
+		unsigned int pad1;
+	};
+
+	struct GfxPlacement
+	{
+		float quat[4];
+		float origin[3];
+	};
+
+	struct GfxScaledPlacement
+	{
+		GfxPlacement base;
+		float scale;
+	};
+
+	struct GfxParticleCloud
+	{
+		GfxScaledPlacement placement;
+		float endpos[3];
+		GfxColor color;
+		float radius[2];
+		unsigned int pad[2];
+	};
+
+	struct GfxDrawSurfFields
+	{
+		unsigned __int64 objectId : 16;
+		unsigned __int64 reflectionProbeIndex : 8;
+		unsigned __int64 customIndex : 5;
+		unsigned __int64 materialSortedIndex : 11;
+		unsigned __int64 prepass : 2;
+		unsigned __int64 primaryLightIndex : 8;
+		unsigned __int64 surfType : 4;
+		unsigned __int64 primarySortKey : 6;
+		unsigned __int64 unused : 4;
+	};
+
+	union GfxDrawSurf
+	{
+		GfxDrawSurfFields fields;
+		unsigned __int64 packed;
+	};
+
+	struct GfxEntity
+	{
+		unsigned int renderFxFlags;
+		float materialTime;
+	};
+
 	struct GfxBackEndData
 	{
 		char surfsBuffer[131072];
 		FxCodeMeshData codeMeshes[2048];
 		int primDrawSurfsBuf[65536];
-		GfxViewParms viewParms[1];
-		char pad_soemtpy[4096][118];
-		char pad_whatever[88];
+		GfxViewParms viewParms[28];
+		char primaryLightTechType[10][256];
+		float codeMeshArgs[256][4];
+		GfxParticleCloud clouds[256];
+		GfxDrawSurf drawSurfs[32768];
+		GfxMeshData codeMesh;
+		GfxModelLightingPatch modelLightingPatchList[4096];
+		volatile int modelLightingPatchCount;
+		GfxBackEndPrimitiveData prim;
+		unsigned int shadowableLightHasShadowMap[8];
+		unsigned int frameCount;
+		int drawSurfCount;
+		volatile int surfPos_0xD7D50;
+		volatile int gfxEntCount;
+		GfxEntity gfxEnts[128];
+		volatile int cloudCount;
+		volatile int codeMeshCount;
+		volatile int codeMeshArgsCount;
+		volatile int markMeshCount;
+		FxMarkMeshData markMeshes[1536];
+		GfxMeshData markMesh;
+		GfxVertexBufferState* skinnedCacheVb;
+		IDirect3DQuery9* endFence;
+		int actual_tempskinbuf_pad_here_or_after_modelLightingPatchCount;
+		volatile int tempSkinPos;
 		int viewParmCount;
 		GfxFog fogSettings[1];
-		GfxCmdArray *commands;
+		GfxCmdArray* commands;
 		int viewInfoIndex;
 		int viewInfoCount;
-		GfxViewInfo *viewInfo;
-		char pad_0xDE1C0[4];
+		GfxViewInfo* viewInfo;
+		char execState_cmd[4];
 		GfxLight sunLight[1];
 		int hasApproxSunDirChanged;
 		int primDrawSurfPos;
-		int *staticModelLit;
+		int* staticModelLit;
 		DebugGlobals debugGlobals[1];
 		int drawType;
-	};
+		int align_padding[2];
+
+	}; STATIC_ASSERT_SIZE(GfxBackEndData, 0xDE270);
 
 	/*struct IDirect3DSwapChain9Vtbl
 	{
@@ -1300,25 +1395,6 @@ namespace game
 		int numFixedSize;
 	};
 
-	struct GfxDrawSurfFields
-	{
-		unsigned __int64 objectId : 16;
-		unsigned __int64 reflectionProbeIndex : 8;
-		unsigned __int64 customIndex : 5;
-		unsigned __int64 materialSortedIndex : 11;
-		unsigned __int64 prepass : 2;
-		unsigned __int64 primaryLightIndex : 8;
-		unsigned __int64 surfType : 4;
-		unsigned __int64 primarySortKey : 6;
-		unsigned __int64 unused : 4;
-	};
-
-	union GfxDrawSurf
-	{
-		GfxDrawSurfFields fields;
-		unsigned __int64 packed;
-	};
-
 	struct MaterialInfo
 	{
 		const char* name;
@@ -1453,18 +1529,6 @@ namespace game
 	struct GfxCodeMatrices
 	{
 		GfxMatrix matrix[32];
-	};
-
-	struct GfxPlacement
-	{
-		float quat[4];
-		float origin[3];
-	};
-
-	struct GfxScaledPlacement
-	{
-		GfxPlacement base;
-		float scale;
 	};
 
 	enum GfxViewMode
@@ -2557,12 +2621,6 @@ namespace game
 		Material* origMaterial;
 		MaterialTechniqueType origTechType;
 	}; STATIC_ASSERT_SIZE(GfxCmdBufState, 0xA10);
-
-	struct GfxEntity
-	{
-		unsigned int renderFxFlags;
-		float materialTime;
-	};
 
 	struct GfxLightingInfo
 	{

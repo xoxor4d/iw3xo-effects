@@ -11,6 +11,7 @@
  * #PHYS
  *
  * #ENV_DEPENDENT
+ * #NOT_IMPL
  */
 
 namespace fx_system
@@ -63,6 +64,39 @@ namespace fx_system
 		WRKCMD_COUNT = 0x11,
 	};
 
+	enum FxRandKey
+	{
+		FXRAND_VELOCITY_X = 0x0,
+		FXRAND_VELOCITY_Y = 0x1,
+		FXRAND_VELOCITY_Z = 0x2,
+		FXRAND_ANGULAR_VELOCITY_PITCH = 0x3,
+		FXRAND_ANGULAR_VELOCITY_YAW = 0x4,
+		FXRAND_ANGULAR_VELOCITY_ROLL = 0x5,
+		FXRAND_ORIGIN_X = 0x6,
+		FXRAND_ORIGIN_Y = 0x7,
+		FXRAND_ORIGIN_Z = 0x8,
+		FXRAND_OFFSET_YAW = 0x9,
+		FXRAND_OFFSET_HEIGHT = 0xA,
+		FXRAND_OFFSET_RADIUS = 0xB,
+		FXRAND_ANGLES_PITCH = 0xC,
+		FXRAND_ANGLES_YAW = 0xD,
+		FXRAND_ANGLES_ROLL = 0xE,
+		FXRAND_GRAVITY = 0xF,
+		FXRAND_REFLECTION_FACTOR = 0x10,
+		FXRAND_LIFE_SPAN = 0x11,
+		FXRAND_SPAWN_DELAY = 0x12,
+		FXRAND_SPAWN_COUNT = 0x13,
+		FXRAND_EMIT_DIST = 0x14,
+		FXRAND_VISUAL = 0x15,
+		FXRAND_TILE_START = 0x16,
+		FXRAND_COLOR = 0x17,
+		FXRAND_ROTATION = 0x18,
+		FXRAND_ROTATION_DELTA = 0x19,
+		FXRAND_SIZE_0 = 0x1A,
+		FXRAND_SIZE_1 = 0x1B,
+		FXRAND_SCALE = 0x1C,
+		FXRAND_COUNT = 0x1D,
+	};
 
 	enum $D91DF7250D497AE680597430665E65B1
 	{
@@ -492,6 +526,17 @@ namespace fx_system
 		FxVisBlocker blocker[256];
 		volatile int blockerCount;
 		unsigned int pad[3];
+	};
+
+	struct FxTrailSegmentDrawState
+	{
+		FxTrailDef* trailDef;
+		float posWorld[3];
+		float basis[2][3];
+		float rotation;
+		float size[2];
+		float uCoord;
+		char color[4];
 	};
 
 	struct FxSystem

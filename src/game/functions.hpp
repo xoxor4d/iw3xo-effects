@@ -12,8 +12,16 @@ namespace game
 	extern game::vec3_t vec3_origin;
 	extern game::vec4_t color_white;
 
+	extern int& g_processCodeMesh;
+
 	extern fx_system::FxSystem& fx_systemPool;
 	extern game::DxGlobals& dx;
+
+	static DWORD* frontEndDataOut_ptr = (DWORD*)(0xCCAA80);
+	static DWORD* backEndDataOut_ptr = (DWORD*)(0xDED840);
+
+	extern game::GfxBackEndData* get_backenddata();
+	extern game::GfxBackEndData* get_frontenddata();
 
 	typedef void(*Com_Error_t)(const char* error, ...);
 		extern Com_Error_t Com_Error;

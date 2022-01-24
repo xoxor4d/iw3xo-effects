@@ -261,6 +261,50 @@ namespace fx_system
 		(*axis)[8] = 1.0f - (xx + yy);
 	}
 
+	game::PackedTexCoords Vec2PackTexCoords(float ucord, float texcoord)
+	{
+		std::uint16_t s0, t0;
+		int s_temp, t_temp;
+
+		if ((int)((2 * LODWORD(ucord)) ^ 0x80000000) >> 14 < 0x3FFF)
+		{
+			s_temp = (int)((2 * LODWORD(ucord)) ^ 0x80000000) >> 14;
+		}
+		else
+		{
+			s_temp = 0x3FFF;
+		}
+
+		if (s_temp > -16384)
+		{
+			s0 = s_temp;
+		}
+		else
+		{
+			s0 = -16384;
+		}
+
+		if ((int)((2 * LODWORD(texcoord)) ^ 0x80000000) >> 14 < 0x3FFF)
+		{
+			t_temp = (int)((2 * LODWORD(texcoord)) ^ 0x80000000) >> 14;
+		}
+		else
+		{
+			t_temp = 0x3FFF;
+		}
+
+		if (t_temp > -16384)
+		{
+			t0 = t_temp;
+		}
+		else
+		{
+			t0 = -16384;
+		}
+
+		return (game::PackedTexCoords)(( (t0 & 0x3FFF) | ((LODWORD(texcoord) >> 16) & 0xC000)) + (( (s0 & 0x3FFF) | ((LODWORD(ucord) >> 16) & 0xC000)) << 16));
+	}
+
 	float Vec3Distance(const float* p1, const float* p2)
 	{
 		float dir[3];

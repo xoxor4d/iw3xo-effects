@@ -125,11 +125,10 @@ namespace fx_system
 
 			if (!game::dx.deviceLost)
 			{
-				// todo
-				// FX_GenerateVerts((FxGenerateVertsCmd *)cmd);
+				FX_GenerateVerts((FxGenerateVertsCmd *)cmd);
 
 				// #ENV_DEPENDENT
-				utils::hook::call<void(__cdecl)(void*)>(0x48E7F0)(cmd); // FX_GenerateVerts
+				//utils::hook::call<void(__cdecl)(void*)>(0x48E7F0)(cmd); // FX_GenerateVerts
 			}
 			break;
 

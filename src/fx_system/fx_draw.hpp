@@ -16,16 +16,33 @@ namespace fx_system
 
 	FxElemVisuals	FX_GetElemVisuals(FxElemDef* elemDef, int randomSeed);
 	void			FX_SetupVisualState(FxElemDef* elemDef, FxEffect* effect, int randomSeed, float normTimeUpdateEnd, FxElemPreVisualState* preVisState);
+
+	char			FX_InterpolateColor(int channel, FxElemVisStateSample* refState, float valueLerp, float valueLerpInv, float sampleLerp, float sampleLerpInv);
+	float			FX_IntegrateRotationFromZero(FxElemVisStateSample* refState, int randomSeed, int randomKey, float sampleLerp, float msecLifeSpan);
 	void			FX_EvaluateSize(FxElemPreVisualState* preVisState, FxElemVisualState* visState);
-
-	float			FX_CalculateFade(float dist, FxFloatRange* range);
+	void			FX_EvaluateVisualState(FxElemPreVisualState* preVisState, float msecLifeSpan, FxElemVisualState* visState);
 	void			FX_EvaluateDistanceFade(FxDrawState* draw);
+	float			FX_CalculateFade(float dist, FxFloatRange* range);
 
-	void			FX_FillGenerateVertsCmd(int localClientNum, FxGenerateVertsCmd* cmd);
+	void			FX_GenTrail_IndsForSegment(FxDrawState* draw, unsigned __int16 reservedBaseVertex, r_double_index_t* outIndices);
+	void			FX_GenTrail_VertsForSegment(FxTrailSegmentDrawState* segmentDrawState, game::GfxPackedVertex* remoteVerts);
+	void			FX_GenTrail_PopulateSegmentDrawState(FxTrailSegmentDrawState* outState, const float(*basis)[3], FxDrawState* draw, float spawnDist, float uCoordOffset);
+	void			FX_TrailElem_UncompressBasis(float(*basis)[3], const char(*inBasis)[3]);
 
+	void			FX_DrawSpriteEffect(FxSystem* system, FxEffect* effect, int drawTime);
+	void			FX_DrawTrailsForEffect(FxSystem* system, FxEffect* effect, int drawTime);
+	void			FX_DrawSpriteElems(FxSystem* system, int drawTime);
 	void			FX_DrawElement_Setup_1_(FxDrawState* draw, int msecBegin, int sequence, float* origin, float* outRealNormTime);
 	void			FX_DrawElement(FxElemDef* elemDef, FxElem* elem, FxDrawState* state);
 	void			FX_DrawNonSpriteEffect(int elemClass, int drawTime, FxSystem* system, FxEffect* effect);
 	void			FX_DrawNonSpriteElems(FxSystem* system);
 
+	void			FX_FillGenerateVertsCmd(int localClientNum, FxGenerateVertsCmd* cmd);
+	void			FX_GenerateVerts(FxGenerateVertsCmd* cmd);
+
+	
+	game::GfxPackedVertex*	R_GetCodeMeshVerts(unsigned __int16 baseVertex);
+	bool					R_ReserveCodeMeshIndices(int indexCount, r_double_index_t** indicesOut);
+	bool					R_ReserveCodeMeshVerts(int vertCount, unsigned __int16* baseVertex);
+	void					R_AddCodeMeshDrawSurf(game::Material* material, r_double_index_t* indices, unsigned int indexCount, unsigned int argOffset, unsigned int argCount, const char* fxName);
 }
