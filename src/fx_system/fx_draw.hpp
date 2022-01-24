@@ -14,6 +14,8 @@ namespace fx_system
 	void			FX_DrawSpotLightEffect(FxSystem* system, FxEffect* effect, int msecDraw);
 	void			FX_DrawSpotLight(FxSystem* system);
 
+	void			FX_GetSpriteTexCoords(FxDrawState* draw, float* s0, float* ds, float* t0, float* dt);
+
 	FxElemVisuals	FX_GetElemVisuals(FxElemDef* elemDef, int randomSeed);
 	void			FX_SetupVisualState(FxElemDef* elemDef, FxEffect* effect, int randomSeed, float normTimeUpdateEnd, FxElemPreVisualState* preVisState);
 
@@ -29,6 +31,9 @@ namespace fx_system
 	void			FX_GenTrail_PopulateSegmentDrawState(FxTrailSegmentDrawState* outState, const float(*basis)[3], FxDrawState* draw, float spawnDist, float uCoordOffset);
 	void			FX_TrailElem_UncompressBasis(float(*basis)[3], const char(*inBasis)[3]);
 
+	unsigned int	FX_CullElementForDraw_FrustumPlaneCount(FxDrawState* draw);
+	bool			FX_CullElementForDraw_Sprite(FxDrawState* draw);
+
 	void			FX_DrawSpriteEffect(FxSystem* system, FxEffect* effect, int drawTime);
 	void			FX_DrawTrailsForEffect(FxSystem* system, FxEffect* effect, int drawTime);
 	void			FX_DrawSpriteElems(FxSystem* system, int drawTime);
@@ -36,6 +41,8 @@ namespace fx_system
 	void			FX_DrawElement(FxElemDef* elemDef, FxElem* elem, FxDrawState* state);
 	void			FX_DrawNonSpriteEffect(int elemClass, int drawTime, FxSystem* system, FxEffect* effect);
 	void			FX_DrawNonSpriteElems(FxSystem* system);
+
+	void			FX_GenSpriteVerts(FxDrawState* draw, const float* normal, const float* tangent, const float* binormal);
 
 	void			FX_FillGenerateVertsCmd(int localClientNum, FxGenerateVertsCmd* cmd);
 	void			FX_GenerateVerts(FxGenerateVertsCmd* cmd);

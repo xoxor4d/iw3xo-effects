@@ -25,26 +25,30 @@ namespace fx_system
 
 	void FX_DrawElem_BillboardSprite(FxDrawState* draw)
 	{
-		// #ENV_DEPENDENT
 		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CBB0)(draw);
-
-		float normal[3]; // [esp+4h] [ebp-24h] BYREF
-		float tangent[3]; // [esp+10h] [ebp-18h] BYREF
-		float binormal[3]; // [esp+1Ch] [ebp-Ch] BYREF
 
 		if (!FX_CullElementForDraw_Sprite(draw))
 		{
-			normal[0]  = -draw->camera->axis[0][0];
-			normal[1]  = -draw->camera->axis[0][1];
-			normal[2]  = -draw->camera->axis[0][2];
+			const float normal[3] =
+			{
+				-draw->camera->axis[0][0],
+				-draw->camera->axis[0][1],
+				-draw->camera->axis[0][2]
+			};
 
-			tangent[0] = -draw->camera->axis[1][0];
-			tangent[1] = -draw->camera->axis[1][1];
-			tangent[2] = -draw->camera->axis[1][2];
+			const float tangent[3] =
+			{
+				-draw->camera->axis[1][0],
+				-draw->camera->axis[1][1],
+				-draw->camera->axis[1][2]
+			};
 
-			binormal[0] = draw->camera->axis[2][0];
-			binormal[1] = draw->camera->axis[2][1];
-			binormal[2] = draw->camera->axis[2][2];
+			const float binormal[3] =
+			{
+				draw->camera->axis[2][0],
+				draw->camera->axis[2][1],
+				draw->camera->axis[2][2]
+			};
 
 			FX_GenSpriteVerts(draw, normal, tangent, binormal);
 		}
@@ -144,6 +148,84 @@ namespace fx_system
 			FX_RunGarbageCollectionAndPrioritySort(system);
 		}
 	}
+
+	// checked
+	void FX_GetSpriteTexCoords(FxDrawState* draw, float* s0, float* ds, float* t0, float* dt)
+	{
+		if (!draw)
+		{
+			Assert();
+		}
+
+		FxElemDef* elemDef = draw->elemDef;
+		if (!elemDef)
+		{
+			Assert();
+		}
+
+		const int atlasCount = elemDef->atlas.entryCount;
+		if (atlasCount == 1)
+		{
+			*s0 = 0.0f;
+			*ds = 1.0f;
+			*t0 = 0.0f;
+			*dt = 1.0f;
+			return;
+		}
+
+		if ((unsigned int)(atlasCount - 2) > 254 || ((atlasCount - 1) & atlasCount) != 0)
+		{
+			Assert();
+		}
+
+		int atlasIndex = 0;
+
+		if ((elemDef->atlas.behavior & FX_ATLAS_START_MASK) != FX_ATLAS_START_FIXED)
+		{
+			if ((elemDef->atlas.behavior & FX_ATLAS_START_MASK) == FX_ATLAS_START_RANDOM)
+			{
+				atlasIndex = FX_RandomFloatAsUInt16(22, draw->randomSeed); // 2 * draw->randomSeed ?
+			}
+			else
+			{
+				if ((elemDef->atlas.behavior & FX_ATLAS_START_MASK) != FX_ATLAS_START_INDEXED)
+				{
+					Assert();
+				}
+
+				atlasIndex = (atlasCount - 1) & static_cast<std::uint8_t>(draw->elem->sequence);
+			}
+		}
+		else
+		{
+			atlasIndex = static_cast<std::uint8_t>(elemDef->atlas.index);
+		}
+
+		if ((elemDef->atlas.behavior & FX_ATLAS_PLAY_OVER_LIFE) != FX_ATLAS_START_FIXED)
+		{
+			atlasIndex += (static_cast<int>( draw->normTimeUpdateEnd * static_cast<float>(atlasCount) ));
+		}
+		else if (elemDef->atlas.fps)
+		{
+			atlasIndex += (static_cast<std::uint8_t>(elemDef->atlas.fps) * static_cast<int>(draw->msecElapsed) / 1000);
+		}
+
+		if ((elemDef->atlas.behavior & FX_ATLAS_LOOP_ONLY_N_TIMES) != FX_ATLAS_START_FIXED && atlasIndex >= atlasCount * static_cast<std::uint8_t>(elemDef->atlas.loopCount))
+		{
+			atlasIndex = atlasCount - 1;
+		}
+
+		atlasIndex = (atlasCount - 1) & atlasIndex;
+
+		const auto col_idx = static_cast<float>((1 << elemDef->atlas.colIndexBits));
+		*ds = (1.0f / col_idx);
+		*s0 = (1.0f / col_idx) * static_cast<float>((atlasIndex & (1 << elemDef->atlas.colIndexBits) - 1));
+
+		const auto row_idx = static_cast<float>((1 << elemDef->atlas.rowIndexBits));
+		*dt = (1.0f / row_idx);
+		*t0 = (1.0f / row_idx) * (float)(atlasIndex >> elemDef->atlas.colIndexBits);
+	}
+
 
 	FxElemVisuals FX_GetElemVisuals(FxElemDef* elemDef, int randomSeed)
 	{
@@ -436,36 +518,42 @@ namespace fx_system
 		}
 	}
 
+	unsigned int FX_CullElementForDraw_FrustumPlaneCount(FxDrawState* draw)
+	{
+		if ((!draw || !draw->camera || draw->camera->frustumPlaneCount < 5))
+		{
+			Assert();
+		}
+
+		if ((draw->elemDef->flags & FX_ELEM_DRAW_PAST_FOG) != 0)
+		{
+			return 5;
+		}
+
+		return draw->camera->frustumPlaneCount;
+	}
+
 	bool FX_CullElementForDraw_Sprite(FxDrawState* draw)
 	{
-		unsigned int frustumPlaneCount; // ecx
-		double v3; // st7
-		bool result; // al
-		float v5; // [esp+8h] [ebp-8h]
-		float radius; // [esp+Ch] [ebp-4h]
-
 		if (!game::Dvar_FindVar("fx_cull_elem_draw")->current.enabled)
 		{
 			return false;
 		}
 
-		frustumPlaneCount = FX_CullElementForDraw_FrustumPlaneCount(draw);
-		v3 = draw->visState.size[0];
-		v5 = v3 - draw->visState.size[1];
-		if (v5 < 0.0)
+		const unsigned int frustumPlaneCount = FX_CullElementForDraw_FrustumPlaneCount(draw);
+		float radius = draw->visState.size[0];
+
+		if (draw->visState.size[0] - draw->visState.size[1] < 0.0f)
 		{
-			v3 = draw->visState.size[1];
+			radius = draw->visState.size[1];
 		}
-		radius = v3;
+
 		if (FX_CullSphere(draw->camera, frustumPlaneCount, draw->posWorld, radius))
 		{
-			result = true;
+			return true;
 		}
-		else
-		{
-			result = false;
-		}
-		return result;
+		
+		return false;
 	}
 
 	void FX_DrawSpriteEffect(FxSystem* system, FxEffect* effect, int drawTime)
@@ -898,6 +986,178 @@ namespace fx_system
 		if (system->needsGarbageCollection)
 		{
 			FX_RunGarbageCollectionAndPrioritySort(system);
+		}
+	}
+
+	// checked
+	void FX_GenSpriteVerts(FxDrawState* draw, const float* normal, const float* tangent, const float* binormal)
+	{
+		FxElemVisuals visuals;
+		visuals.anonymous = FX_GetElemVisuals(draw->elemDef, draw->randomSeed).anonymous;
+
+		if (!visuals.material)
+		{
+			Assert();
+		}
+
+		FxSpriteInfo* sprite = &draw->system->sprite;
+
+		if (sprite->material != visuals.anonymous && sprite->indexCount)
+		{
+			if (!sprite->name || !sprite->material || !sprite->indices)
+			{
+				Assert();
+			}
+			
+			R_AddCodeMeshDrawSurf(sprite->material, sprite->indices, sprite->indexCount, 0, 0, sprite->name);
+			sprite->indexCount = 0;
+		}
+
+		r_double_index_t* baseIndices = nullptr;
+		std::uint16_t baseVertex = 0;
+
+		if (R_ReserveCodeMeshVerts(4, &baseVertex) && R_ReserveCodeMeshIndices(6, &baseIndices))
+		{
+			if (sprite->material != visuals.anonymous)
+			{
+				sprite->name = draw->effect->def->name;
+				sprite->material = visuals.material;
+				sprite->indices = baseIndices;
+			}
+
+			sprite->indexCount += 6;
+			FX_EvaluateVisualState(&draw->preVisState, draw->msecLifeSpan, &draw->visState);
+
+			const float rotTotal = draw->visState.rotationTotal;
+			const float cosRot = cosf(rotTotal);
+			const float sinRot = sinf(rotTotal);
+
+			const float rotatedTangent[3] =
+			{
+				(cosRot * tangent[0]) + (sinRot * binormal[0]),
+				(cosRot * tangent[1]) + (sinRot * binormal[1]),
+				(cosRot * tangent[2]) + (sinRot * binormal[2])
+			};
+
+			const float rotatedBinormal[3] = 
+			{
+				(sinRot * tangent[0]) + (-cosRot * binormal[0]),
+				(sinRot * tangent[1]) + (-cosRot * binormal[1]),
+				(sinRot * tangent[2]) + (-cosRot * binormal[2])
+			};
+			
+			const float left[3] =
+			{
+				draw->visState.size[0] * rotatedTangent[0],
+				draw->visState.size[0] * rotatedTangent[1],
+				draw->visState.size[0] * rotatedTangent[2]
+			};
+
+			const float up[3] =
+			{
+				draw->visState.size[1] * rotatedBinormal[0],
+				draw->visState.size[1] * rotatedBinormal[1],
+				draw->visState.size[1] * rotatedBinormal[2]
+			};
+
+			const float leftSide[3] =
+			{
+				draw->posWorld[0] - left[0],
+				draw->posWorld[1] - left[1],
+				draw->posWorld[2] - left[2]
+			};
+
+			const float rightSide[3] =
+			{
+				draw->posWorld[0] + left[0],
+				draw->posWorld[1] + left[1],
+				draw->posWorld[2] + left[2]
+			};
+
+			r_double_index_t index;
+			r_double_index_t* indices = baseIndices;
+
+			index.value[0] = baseVertex;
+			index.value[1] = baseVertex + 1;
+
+			*baseIndices = index;
+			++indices;
+
+			index.value[0] = baseVertex + 2;
+			index.value[1] = baseVertex + 2;
+
+			*indices++ = index;
+			index.value[0] = baseVertex + 3;
+
+			index.value[1] = baseVertex;
+			*indices++ = index;
+
+			float s0, ds, t0, dt;
+
+			FX_GetSpriteTexCoords(draw, &s0, &ds, &t0, &dt);
+
+			game::PackedUnitVec p_nrm = {};
+			p_nrm.array[0] = static_cast<int>(((normal[0] * 127.0f) + 127.5f));
+			p_nrm.array[1] = static_cast<int>(((normal[1] * 127.0f) + 127.5f));
+			p_nrm.array[2] = static_cast<int>(((normal[2] * 127.0f) + 127.5f));
+			p_nrm.array[3] = 63;
+
+			game::PackedUnitVec p_tan = {};
+			p_tan.array[0] = static_cast<int>(((rotatedTangent[0] * 127.0f) + 127.5f));
+			p_tan.array[1] = static_cast<int>(((rotatedTangent[1] * 127.0f) + 127.5f));
+			p_tan.array[2] = static_cast<int>(((rotatedTangent[2] * 127.0f) + 127.5f));
+			p_tan.array[3] = 63;
+
+			float testBinormal[3] = {};
+			Vec3Cross(normal, rotatedTangent, testBinormal);
+
+			if (testBinormal[0] * rotatedBinormal[0] + testBinormal[1] * rotatedBinormal[1] + testBinormal[2] * rotatedBinormal[2] > 0.0f)
+			{
+				Assert();
+			}
+
+			game::GfxPackedVertex* verts = R_GetCodeMeshVerts(baseVertex);
+
+			for (int i = 0; i < 4; ++i)
+			{
+				verts[i].binormalSign = -1.0f;
+
+				verts[i].color.array[0] = draw->visState.color[0];
+				verts[i].color.array[1] = draw->visState.color[1];
+				verts[i].color.array[2] = draw->visState.color[2];
+				verts[i].color.array[3] = draw->visState.color[3];
+
+				verts[i].normal = p_nrm;
+				verts[i].tangent = p_tan;
+			}
+
+
+			// ---
+			verts->xyz[0] = leftSide[0] + up[0];
+			verts->xyz[1] = leftSide[1] + up[1];
+			verts->xyz[2] = leftSide[2] + up[2];
+			verts->texCoord = Vec2PackTexCoords(s0, t0 + dt);
+
+
+			// ---
+			verts[1].xyz[0] = leftSide[0] - up[0];
+			verts[1].xyz[1] = leftSide[1] - up[1];
+			verts[1].xyz[2] = leftSide[2] - up[2];
+			verts[1].texCoord = Vec2PackTexCoords(s0, t0);
+
+
+			// ---
+			verts[2].xyz[0] = rightSide[0] - up[0];
+			verts[2].xyz[1] = rightSide[1] - up[1];
+			verts[2].xyz[2] = rightSide[2] - up[2];
+			verts[2].texCoord = Vec2PackTexCoords(ds + s0, t0);
+
+
+			// ---
+			verts[3].xyz[0] = rightSide[0] + up[0];
+			verts[3].xyz[1] = rightSide[1] + up[1];
+			verts[3].xyz[2] = rightSide[2] + up[2];
+			verts[3].texCoord = Vec2PackTexCoords(ds + s0, t0 + dt);
 		}
 	}
 
