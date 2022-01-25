@@ -1395,7 +1395,7 @@ namespace game
 		int numFixedSize;
 	};
 
-	struct MaterialInfo
+	/*struct MaterialInfo
 	{
 		const char* name;
 		char gameFlags;
@@ -1405,7 +1405,7 @@ namespace game
 		GfxDrawSurf drawSurf;
 		unsigned int surfaceTypeBits;
 		unsigned __int16 hashIndex;
-	};
+	};*/
 
 	struct GfxStateBits
 	{
@@ -1485,11 +1485,25 @@ namespace game
 		MaterialWorldVertexFormat worldVertFormat;
 		MaterialTechnique* techniques[34];
 	};
-	
+
+	// #ENV_DEPENDENT
+	struct MaterialInfo
+	{
+		const char* name;
+		char gameFlags;
+		char sortKey;
+		char textureAtlasRowCount;
+		char textureAtlasColumnCount;
+		game::GfxDrawSurf drawSurf;
+		unsigned int surfaceTypeBits;
+		unsigned __int16 hashIndex;
+		char pad[32];
+	}; STATIC_ASSERT_SIZE(MaterialInfo, 0x38);
+
+	// #ENV_DEPENDENT
 	struct Material
 	{
 		MaterialInfo info;
-		char pad[32];
 		char stateBitsEntry[34];
 		char textureCount;
 		char constantCount;
@@ -1500,7 +1514,7 @@ namespace game
 		MaterialTextureDef* textureTable;
 		MaterialConstantDef* constantTable;
 		GfxStateBits* stateBitsTable;
-	};
+	}; STATIC_ASSERT_SIZE(Material, 0x70);
 
 	struct Glyph
 	{

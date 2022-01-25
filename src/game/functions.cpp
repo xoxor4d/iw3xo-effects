@@ -28,5 +28,9 @@ namespace game
 		return out;
 	}
 
+	// #ENV_DEPENDENT
 	Com_Error_t Com_Error = Com_Error_t(0x405820);
+
+	bool& allow_warnings = *reinterpret_cast<bool*>(0x673876);
+	Com_PrintError_t Com_PrintError = Com_PrintError_t(0x402640);
 }

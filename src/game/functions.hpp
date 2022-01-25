@@ -26,6 +26,11 @@ namespace game
 	typedef void(*Com_Error_t)(const char* error, ...);
 		extern Com_Error_t Com_Error;
 
+	extern bool& allow_warnings;
+
+	typedef void(*Com_PrintError_t)(int unused, const char* format, ...);
+		extern Com_PrintError_t Com_PrintError;
+
 	static utils::function<game::dvar_s* (const char* name)> Dvar_FindVar = 0x43DE60;
 
 }

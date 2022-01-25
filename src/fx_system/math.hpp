@@ -11,6 +11,8 @@ namespace fx_system
 	void	UnitQuatToAxis(const float* quat, float(*axis)[3]);
 
 	game::PackedTexCoords Vec2PackTexCoords(float ucord, float texcoord);
+	float	Vec2Length(const float* v);
+	float	Vec2Normalize(float* v);
 
 	float	Vec3Distance(const float* p1, const float* p2);
 	float	Vec3DistanceSq(const float* p1, const float* p2);

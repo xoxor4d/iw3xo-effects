@@ -64,6 +64,40 @@ namespace fx_system
 		WRKCMD_COUNT = 0x11,
 	};
 
+	enum FxSampleChannel
+	{
+		FX_CHAN_RGBA = 0x0,
+		FX_CHAN_SIZE_0 = 0x1,
+		FX_CHAN_SIZE_1 = 0x2,
+		FX_CHAN_SCALE = 0x3,
+		FX_CHAN_ROTATION = 0x4,
+		FX_CHAN_COUNT = 0x5,
+		FX_CHAN_NONE = 0x6,
+	};
+
+	enum $88FA8A00277D7F476A2C7B0CBC574EE4
+	{
+		FX_ED_FLAG_LOOPING = 0x1,
+		FX_ED_FLAG_USE_RANDOM_COLOR = 0x2,
+		FX_ED_FLAG_USE_RANDOM_ALPHA = 0x4,
+		FX_ED_FLAG_USE_RANDOM_SIZE_0 = 0x8,
+		FX_ED_FLAG_USE_RANDOM_SIZE_1 = 0x10,
+		FX_ED_FLAG_USE_RANDOM_SCALE = 0x20,
+		FX_ED_FLAG_USE_RANDOM_ROTATION_DELTA = 0x40,
+		FX_ED_FLAG_MODULATE_COLOR_BY_ALPHA = 0x80,
+		FX_ED_FLAG_USE_RANDOM_VELOCITY_0 = 0x100,
+		FX_ED_FLAG_USE_RANDOM_VELOCITY_1 = 0x200,
+		FX_ED_FLAG_BACKCOMPAT_VELOCITY = 0x400,
+		FX_ED_FLAG_ABSOLUTE_VELOCITY_0 = 0x800,
+		FX_ED_FLAG_ABSOLUTE_VELOCITY_1 = 0x1000,
+		FX_ED_FLAG_PLAY_ON_TOUCH = 0x2000,
+		FX_ED_FLAG_PLAY_ON_DEATH = 0x4000,
+		FX_ED_FLAG_PLAY_ON_RUN = 0x8000,
+		FX_ED_FLAG_BOUNDING_SPHERE = 0x10000,
+		FX_ED_FLAG_USE_ITEM_CLIP = 0x20000,
+		FX_ED_FLAG_DISABLED = 0x80000000,
+	};
+
 	enum FxRandKey
 	{
 		FXRAND_VELOCITY_X = 0x0,
@@ -547,6 +581,95 @@ namespace fx_system
 		float size[2];
 		float uCoord;
 		char color[4];
+	};
+
+	struct FxEditorElemAtlas
+	{
+		int behavior;
+		int index;
+		int fps;
+		int loopCount;
+		int colIndexBits;
+		int rowIndexBits;
+		int entryCount;
+	};
+
+	struct FxCurve
+	{
+		int dimensionCount;
+		int keyCount;
+		float keys[1];
+	};
+
+	union $334D0C15980AB47FC3D96222348DFC54
+	{
+		FxElemVisuals visuals[32];
+		FxElemMarkVisuals markVisuals[16];
+	};
+
+	struct FxEditorTrailDef
+	{
+		FxTrailVertex verts[64];
+		int vertCount;
+		unsigned __int16 inds[128];
+		int indCount;
+	};
+
+	struct FxEditorElemDef
+	{
+		char name[48];
+		int editorFlags;
+		int flags;
+		FxFloatRange spawnRange;
+		FxFloatRange fadeInRange;
+		FxFloatRange fadeOutRange;
+		float spawnFrustumCullRadius;
+		FxSpawnDefLooping spawnLooping;
+		FxSpawnDefOneShot spawnOneShot;
+		FxIntRange spawnDelayMsec;
+		FxIntRange lifeSpanMsec;
+		FxFloatRange spawnOrigin[3];
+		FxFloatRange spawnOffsetRadius;
+		FxFloatRange spawnOffsetHeight;
+		FxFloatRange spawnAngles[3];
+		FxFloatRange angularVelocity[3];
+		FxFloatRange initialRotation;
+		FxFloatRange gravity;
+		FxFloatRange elasticity;
+		FxEditorElemAtlas atlas;
+		float velScale[2][3];
+		FxCurve* velShape[2][3][2];
+		float rotationScale;
+		FxCurve* rotationShape[2];
+		float sizeScale[2];
+		FxCurve* sizeShape[2][2];
+		float scaleScale;
+		FxCurve* scaleShape[2];
+		FxCurve* color[2];
+		FxCurve* alpha[2];
+		float lightingFrac;
+		float collOffset[3];
+		float collRadius;
+		FxEffectDef* effectOnImpact;
+		FxEffectDef* effectOnDeath;
+		int sortOrder;
+		FxEffectDef* emission;
+		FxFloatRange emitDist;
+		FxFloatRange emitDistVariance;
+		char elemType;
+		int visualCount;
+		$334D0C15980AB47FC3D96222348DFC54 u;
+		int trailSplitDist;
+		int trailRepeatDist;
+		float trailScrollTime;
+		FxEditorTrailDef trailDef;
+	};
+
+	struct FxEditorEffectDef
+	{
+		char name[64];
+		int elemCount;
+		FxEditorElemDef elems[32];
 	};
 
 	struct FxSystem

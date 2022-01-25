@@ -305,6 +305,25 @@ namespace fx_system
 		return (game::PackedTexCoords)(( (t0 & 0x3FFF) | ((LODWORD(texcoord) >> 16) & 0xC000)) + (( (s0 & 0x3FFF) | ((LODWORD(ucord) >> 16) & 0xC000)) << 16));
 	}
 
+	float Vec2Length(const float* v)
+	{
+		return sqrtf(v[0] * v[0] + v[1] * v[1]);
+	}
+
+	float Vec2Normalize(float* v)
+	{
+		float length = Vec2Length(v);
+		if (-length >= 0.0f)
+		{
+			length = 1.0f;
+		}
+
+		v[0] = v[0] * (1.0f / length);
+		v[1] = v[1] * (1.0f / length);
+
+		return length;
+	}
+
 	float Vec3Distance(const float* p1, const float* p2)
 	{
 		float dir[3];
