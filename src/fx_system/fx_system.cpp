@@ -35,6 +35,85 @@ namespace fx_system
 		return &effect->def->elemDefs[index];
 	}
 
+	void FX_GetTrailHandleList_Last(FxSystem* system, FxEffect* effect, unsigned __int16* outHandleList, int* outTrailCount)
+	{
+		FxTrail* trail = nullptr;
+		int trailIndex = 0;
+
+		for (std::uint16_t trailHandle = effect->firstTrailHandle; trailHandle != UINT16_MAX; trailHandle = trail->nextTrailHandle)
+		{
+			trail = FX_TrailFromHandle(system, trailHandle);
+			if (trailIndex >= 2)
+			{
+				Assert();
+			}
+
+			outHandleList[trailIndex++] = trail->lastElemHandle;
+		}
+
+		*outTrailCount = trailIndex;
+	}
+
+	// checked :: utils::hook::detour(0x475A70, fx_system::FX_RetriggerEffect, HK_JUMP);
+	void FX_RetriggerEffect(int localClientNum, FxEffect* effect, int msecBegin)
+	{
+		if ((effect->status & FX_STATUS_REF_COUNT_MASK) == 0)
+		{
+			Assert();
+		}
+
+		FxSystem* system = FX_GetSystem(localClientNum);
+		++effect->status;
+
+		if ((effect->status & FX_STATUS_HAS_PENDING_LOOP_ELEMS) != 0)
+		{
+			FX_SpawnAllFutureLooping(system, effect, 0, effect->def->elemDefCountLooping, &effect->framePrev, &effect->frameNow, effect->msecBegin, effect->msecLastUpdate);
+			FX_StopEffect(system, effect);
+		}
+
+		std::uint16_t firstOldElemHandle[3];
+		firstOldElemHandle[0] = effect->firstElemHandle[0];
+		firstOldElemHandle[1] = effect->firstElemHandle[1];
+		firstOldElemHandle[2] = effect->firstElemHandle[2];
+
+		int trailCount = 0;
+		std::uint16_t lastOldTrailElemHandle[8] = {};
+		FX_GetTrailHandleList_Last(system, effect, lastOldTrailElemHandle, &trailCount);
+
+		if (msecBegin > effect->msecLastUpdate)
+		{
+			std::uint16_t lastElemHandle[3];
+			lastElemHandle[0] = -1;
+			lastElemHandle[1] = -1;
+			lastElemHandle[2] = -1;
+			FX_UpdateEffectPartial(system, effect, effect->msecLastUpdate, msecBegin, 0.0f, 0.0f, firstOldElemHandle, lastElemHandle, nullptr, lastOldTrailElemHandle);
+		}
+
+		effect->distanceTraveled = 0.0f;
+		effect->msecBegin = msecBegin;
+
+		FX_BeginLooping(system, effect, 0, effect->def->elemDefCountLooping, &effect->frameNow, &effect->frameNow, msecBegin, msecBegin);
+		FX_TriggerOneShot(system, effect, effect->def->elemDefCountLooping, effect->def->elemDefCountOneShot, &effect->frameNow, msecBegin);
+
+
+		if (effect->def->msecLoopingLife != 0)
+		{
+			effect->status |= FX_STATUS_HAS_PENDING_LOOP_ELEMS;
+		}
+
+		if (msecBegin < effect->msecLastUpdate)
+		{
+			FX_UpdateEffectPartial(system, effect, effect->msecBegin, effect->msecLastUpdate, 0.0, 0.0, effect->firstElemHandle, firstOldElemHandle, lastOldTrailElemHandle, 0);
+		}
+
+		FX_SortNewElemsInEffect(system, effect);
+
+		if (effect->def->msecLoopingLife == 0)
+		{
+			FX_DelRefToEffect(system, effect);
+		}
+	}
+
 	// checked :: utils::hook::detour(0x487880, fx_system::FX_BeginLooping, HK_JUMP);
 	void FX_BeginLooping(FxSystem* system, FxEffect* effect, int elemDefFirst, int elemDefCount, FxSpatialFrame* frameWhenPlayed, FxSpatialFrame* frameNow, int msecWhenPlayed, int msecNow)
 	{

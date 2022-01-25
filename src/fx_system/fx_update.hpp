@@ -50,6 +50,7 @@ namespace fx_system
 
 	void				FX_AddNonSpriteDrawSurfs(FxCmd* cmd);
 
+	void				FX_SpawnAllFutureLooping(FxSystem* system, FxEffect* effect, int elemDefFirst, int elemDefCount, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd, int msecWhenPlayed, int msecUpdateBegin);
 	void				FX_SpawnLoopingElems(FxSystem* system, FxEffect* effect, int elemDefIndex, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd, int msecWhenPlayed, int msecUpdateBegin, int msecUpdateEnd);
 	void				FX_SpawnOneShotElems(FxSystem* system, FxEffect* effect, int elemDefIndex, FxSpatialFrame* frameWhenPlayed, int msecWhenPlayed);
 	void				FX_TriggerOneShot(FxSystem* system, FxEffect* effect, int elemDefFirst, int elemDefCount, FxSpatialFrame* frameWhenPlayed, int msecWhenPlayed);

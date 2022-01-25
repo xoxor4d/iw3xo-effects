@@ -1224,6 +1224,22 @@ namespace fx_system
 		}
 	}
 
+	void FX_SpawnAllFutureLooping(FxSystem* system, FxEffect* effect, int elemDefFirst, int elemDefCount, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd, int msecWhenPlayed, int msecUpdateBegin)
+	{
+		if (!effect || !effect->def)
+		{
+			Assert();
+		}
+		
+		for (int elemDefIndex = elemDefFirst; elemDefIndex != elemDefCount + elemDefFirst; ++elemDefIndex)
+		{
+			if (effect->def->elemDefs[elemDefIndex].spawn.looping.count != 0x7FFFFFFF)
+			{
+				FX_SpawnLoopingElems(system, effect, elemDefIndex, frameBegin, frameEnd, msecWhenPlayed, msecUpdateBegin, 0x7FFFFFFF);
+			}
+		}
+	}
+
 	void FX_SpawnLoopingElems(FxSystem* system, FxEffect* effect, int elemDefIndex, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd, int msecWhenPlayed, int msecUpdateBegin, int msecUpdateEnd)
 	{
 		if (!effect || !effect->def)
