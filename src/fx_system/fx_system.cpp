@@ -572,9 +572,13 @@ namespace fx_system
 
 						// #PHYS
 						//if ((elemDef->flags & FX_ELEM_USE_MODEL_PHYSICS) != 0 && !FX_SpawnModelPhysics(elemDef, effect, randomSeed, remoteElem))
-						//{
+						if ((elemDef->flags & FX_ELEM_USE_MODEL_PHYSICS) != 0)
+						{
+							// remove physics flag (does not alter the fx project file)
+							elemDef->flags &= ~FX_ELEM_USE_MODEL_PHYSICS;
+
 							FX_FreeElem(system, FX_ElemToHandle(system->elems, remoteElem), effect, elemClass);
-						//}
+						}
 					}
 				}
 			}

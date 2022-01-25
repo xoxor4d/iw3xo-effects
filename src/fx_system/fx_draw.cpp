@@ -108,12 +108,10 @@ namespace fx_system
 			Vec3Normalize(draw->velDirWorld);
 
 			const float rnd = fx_randomTable[27 + draw->preVisState.randomSeed];
-
 			const float graph_a = rnd * draw->preVisState.refState->amplitude.scale + draw->preVisState.refState->base.scale;
 			const float graph_b = rnd * draw->preVisState.refState[1].amplitude.scale + draw->preVisState.refState[1].base.scale;
 
 			draw->visState.scale = draw->preVisState.sampleLerpInv * graph_a + draw->preVisState.sampleLerp * graph_b;
-
 			if (draw->visState.scale != 0.0f && !FX_CullElementForDraw_Cloud(draw))
 			{
 				++draw->system->gfxCloudCount;
@@ -156,24 +154,75 @@ namespace fx_system
 
 	void FX_DrawElem_Model(FxDrawState* draw)
 	{
-		// #ENV_DEPENDENT
-		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D460)(draw);
+		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D460)(draw);
+		const float rnd = fx_randomTable[27 + draw->preVisState.randomSeed];
+		const float graph_b = rnd * draw->preVisState.refState[1].amplitude.scale + draw->preVisState.refState[1].base.scale;
+		const float graph_a = rnd * draw->preVisState.refState->amplitude.scale + draw->preVisState.refState->base.scale;
+
+		draw->visState.scale = draw->preVisState.sampleLerpInv * graph_a + graph_b * draw->preVisState.sampleLerp;
+		if (draw->visState.scale != 0.0f)
+		{
+			game::GfxScaledPlacement placement = {};
+			FX_SetPlacement(&placement, draw);
+
+			if (draw->elemDef->elemType != FX_ELEM_TYPE_MODEL)
+			{
+				Assert();
+			}
+
+			if ((draw->elemDef->flags & FX_ELEM_USE_MODEL_PHYSICS) != 0)
+			{
+				// #PHYS
+				// FX_SetPlacementFromPhysics(&placement.base, draw);
+			}
+
+			FxElemVisuals visuals;
+			visuals.model = FX_GetElemVisuals(draw->elemDef, draw->randomSeed).model;
+
+			if (!visuals.model)
+			{
+				Assert();
+			}
+
+#ifdef FXEDITOR // #ENV_DEPENDENT
+			// R_FilterXModelIntoScene(visuals.model, &placement, 0, (unsigned __int16*)&draw->elem->u);
+			utils::hook::call<void(__cdecl)(game::XModel*, game::GfxScaledPlacement*, unsigned __int16, unsigned __int16*)>(0x4BF910)(visuals.model, &placement, 0, (unsigned __int16*)&draw->elem->u);
+#else
+			Assert();
+#endif
+		}
 	}
 
 	void FX_DrawElem_Light(FxDrawState* draw)
 	{
-		//Assert();
+		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D5B0)(draw);
 
-		// #ENV_DEPENDENT
-		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D5B0)(draw);
+		if (!FX_CullElementForDraw_Light(draw))
+		{
+			FX_EvaluateVisualState(&draw->preVisState, draw->msecLifeSpan, &draw->visState);
+
+			const float b = static_cast<float>( static_cast<std::uint8_t>(draw->visState.color[0]) ) * 0.003921568859368563f;
+			const float g = static_cast<float>( static_cast<std::uint8_t>(draw->visState.color[1]) ) * 0.003921568859368563f;
+			const float r = static_cast<float>( static_cast<std::uint8_t>(draw->visState.color[2]) ) * 0.003921568859368563f;
+
+#ifdef FXEDITOR // #ENV_DEPENDENT
+			// R_AddOmniLightToScene(draw->posWorld, draw->visState.size[0], r, g, b);
+			utils::hook::call<void(__cdecl)(const float*, float, float, float, float)>(0x49FE30)(draw->posWorld, draw->visState.size[0], r, g, b);
+#else
+			Assert();
+#endif
+		}
 	}
 
 	void FX_DrawElem_SpotLight(FxDrawState* draw)
 	{
-		//Assert();
+		// #NOT_IMPL
 
-		// #ENV_DEPENDENT
+#ifdef FXEDITOR // #ENV_DEPENDENT
 		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D640)(draw);
+#else
+		Assert();
+#endif
 	}
 
 	void FX_DrawSpotLightEffect(FxSystem* system, FxEffect* effect, int msecDraw)
@@ -423,7 +472,7 @@ namespace fx_system
 		const float a0b0 =	static_cast<float>( static_cast<std::uint8_t>( refState->base.color[channel] ) ) * valueLerpInv +
 							static_cast<float>( static_cast<std::uint8_t>( refState->amplitude.color[channel] ) ) * valueLerp;
 
-		return static_cast<int>( (static_cast<double>( a1b1 * sampleLerp + a0b0 * sampleLerpInv ) + 9.313225746154785e-10) );
+		return static_cast<char>( (static_cast<double>( a1b1 * sampleLerp + a0b0 * sampleLerpInv ) + 9.313225746154785e-10) );
 	}
 
 	// checked
@@ -617,9 +666,9 @@ namespace fx_system
 			remoteVerts->texCoord = Vec2PackTexCoords(uCoord, trailDef->verts[vertIter].texCoord);
 
 			game::PackedUnitVec packed_normal = {};
-			packed_normal.array[0] = static_cast<int>(((trailDef->verts[vertIter].normal[1] * up[0] + trailDef->verts[vertIter].normal[0] * left[0]) * 127.0f + 127.5f));
-			packed_normal.array[1] = static_cast<int>(((trailDef->verts[vertIter].normal[1] * up[1] + trailDef->verts[vertIter].normal[0] * left[1]) * 127.0f + 127.5f));
-			packed_normal.array[2] = static_cast<int>(((trailDef->verts[vertIter].normal[1] * up[2] + trailDef->verts[vertIter].normal[0] * left[2]) * 127.0f + 127.5f));
+			packed_normal.array[0] = static_cast<char>(((trailDef->verts[vertIter].normal[1] * up[0] + trailDef->verts[vertIter].normal[0] * left[0]) * 127.0f + 127.5f));
+			packed_normal.array[1] = static_cast<char>(((trailDef->verts[vertIter].normal[1] * up[1] + trailDef->verts[vertIter].normal[0] * left[1]) * 127.0f + 127.5f));
+			packed_normal.array[2] = static_cast<char>(((trailDef->verts[vertIter].normal[1] * up[2] + trailDef->verts[vertIter].normal[0] * left[2]) * 127.0f + 127.5f));
 			packed_normal.array[3] = 63;
 
 			remoteVerts->normal = packed_normal;
@@ -735,6 +784,20 @@ namespace fx_system
 		{
 			const unsigned int frustumPlaneCount = FX_CullElementForDraw_FrustumPlaneCount(draw);
 			if (FX_CullSphere(draw->camera, frustumPlaneCount, draw->posWorld, draw->visState.scale + (draw->visState.size[0] - draw->visState.size[1]) < 0.0f ? draw->visState.size[1] : draw->visState.size[0]))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool FX_CullElementForDraw_Light(FxDrawState* draw)
+	{
+		if (game::Dvar_FindVar("fx_cull_elem_draw")->current.enabled)
+		{
+			const unsigned int frustumPlaneCount = FX_CullElementForDraw_FrustumPlaneCount(draw);
+			if (FX_CullSphere(draw->camera, frustumPlaneCount, draw->posWorld, draw->visState.size[0]))
 			{
 				return true;
 			}
@@ -1039,7 +1102,7 @@ namespace fx_system
 							FX_GenTrail_IndsForSegment(draw, reservedBaseVertex, reservedIndices);
 
 							++curSegment;
-							reservedBaseVertex += vertsPerSegment;
+							reservedBaseVertex += static_cast<std::uint16_t>(vertsPerSegment);
 						}
 					}
 				}
@@ -1339,15 +1402,15 @@ namespace fx_system
 			FX_GetSpriteTexCoords(draw, &s0, &ds, &t0, &dt);
 
 			game::PackedUnitVec p_nrm = {};
-			p_nrm.array[0] = static_cast<int>(((normal[0] * 127.0f) + 127.5f));
-			p_nrm.array[1] = static_cast<int>(((normal[1] * 127.0f) + 127.5f));
-			p_nrm.array[2] = static_cast<int>(((normal[2] * 127.0f) + 127.5f));
+			p_nrm.array[0] = static_cast<char>(((normal[0] * 127.0f) + 127.5f));
+			p_nrm.array[1] = static_cast<char>(((normal[1] * 127.0f) + 127.5f));
+			p_nrm.array[2] = static_cast<char>(((normal[2] * 127.0f) + 127.5f));
 			p_nrm.array[3] = 63;
 
 			game::PackedUnitVec p_tan = {};
-			p_tan.array[0] = static_cast<int>(((rotatedTangent[0] * 127.0f) + 127.5f));
-			p_tan.array[1] = static_cast<int>(((rotatedTangent[1] * 127.0f) + 127.5f));
-			p_tan.array[2] = static_cast<int>(((rotatedTangent[2] * 127.0f) + 127.5f));
+			p_tan.array[0] = static_cast<char>(((rotatedTangent[0] * 127.0f) + 127.5f));
+			p_tan.array[1] = static_cast<char>(((rotatedTangent[1] * 127.0f) + 127.5f));
+			p_tan.array[2] = static_cast<char>(((rotatedTangent[2] * 127.0f) + 127.5f));
 			p_tan.array[3] = 63;
 
 			float testBinormal[3] = {};

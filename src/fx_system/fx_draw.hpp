@@ -40,6 +40,7 @@ namespace fx_system
 	bool			FX_CullElementForDraw_Sprite(FxDrawState* draw);
 	bool			FX_CullElementForDraw_Tail(FxDrawState* draw);
 	bool			FX_CullElementForDraw_Cloud(FxDrawState* draw);
+	bool			FX_CullElementForDraw_Light(FxDrawState* draw);
 
 	bool			FX_CullSphere(FxCamera* camera, unsigned int frustumPlaneCount, const float* posWorld, float radius);
 	bool			FX_CullCylinder(FxCamera* camera, unsigned int frustumPlaneCount, const float* posWorld0, const float* posWorld1, float radius);
