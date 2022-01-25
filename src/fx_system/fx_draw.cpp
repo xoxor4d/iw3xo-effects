@@ -216,13 +216,23 @@ namespace fx_system
 
 	void FX_DrawElem_SpotLight(FxDrawState* draw)
 	{
-		// #NOT_IMPL
+		// utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D640)(draw);
+
+		if (!FX_CullElementForDraw_Light(draw))
+		{
+			FX_EvaluateVisualState(&draw->preVisState, draw->msecLifeSpan, &draw->visState);
+
+			const float b = static_cast<float>(static_cast<std::uint8_t>(draw->visState.color[0])) * 0.003921568859368563f;
+			const float g = static_cast<float>(static_cast<std::uint8_t>(draw->visState.color[1])) * 0.003921568859368563f;
+			const float r = static_cast<float>(static_cast<std::uint8_t>(draw->visState.color[2])) * 0.003921568859368563f;
 
 #ifdef FXEDITOR // #ENV_DEPENDENT
-		utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48D640)(draw);
+			// R_AddSpotLightToScene(draw->posWorld, draw->orient.axis, draw->visState.size[0], r, g, b);
+			utils::hook::call<void(__cdecl)(const float*, const float(*)[3], float, float, float, float)>(0x49FF00)(draw->posWorld, draw->orient.axis, draw->visState.size[0], r, g, b);
 #else
-		Assert();
+			Assert();
 #endif
+		}
 	}
 
 	void FX_DrawSpotLightEffect(FxSystem* system, FxEffect* effect, int msecDraw)
