@@ -32,6 +32,7 @@ namespace fx_system
 		velocity[2] = (rangeLerp[2] * stateNext->velocity.amplitude[2] + stateNext->velocity.base[2]) * weight[1] + velocity[2];
 	}
 
+	// checked
 	void FX_GetVelocityAtTime(FxElemDef* elemDef, int randomSeed, float msecLifeSpan, float msecElapsed, game::orientation_t* orient, const float* baseVel, float* velocity)
 	{
 		if (!elemDef || !elemDef->velSamples || !elemDef->velIntervalCount)
@@ -90,9 +91,9 @@ namespace fx_system
 			FX_GetVelocityAtTimeInFrame(velocityLocal, rangeLerp, weight, &samples[1].local, &samples->local);
 			FX_OrientationDirToWorldDir(orient, velocityLocal, velocityWorld);
 
-			velocity[0] = velocityLocal[0] * 1000.0f + velocity[0];
-			velocity[1] = velocityLocal[1] * 1000.0f + velocity[1];
-			velocity[2] = velocityLocal[2] * 1000.0f + velocity[2];
+			velocity[0] = velocityWorld[0] * 1000.0f + velocity[0];
+			velocity[1] = velocityWorld[1] * 1000.0f + velocity[1];
+			velocity[2] = velocityWorld[2] * 1000.0f + velocity[2];
 		}
 	}
 

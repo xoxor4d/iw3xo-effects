@@ -72,13 +72,16 @@ namespace fx_system
 		//utils::hook::call<void(__cdecl)(FxDrawState*)>(0x48CF90)(draw);
 
 		FX_GetVelocityAtTime(draw->elemDef, draw->randomSeed, draw->msecLifeSpan, draw->msecElapsed, &draw->orient, draw->elem->baseVel, draw->velDirWorld);
+		//utils::hook::call<void(__cdecl)(FxElemDef*, int, float, float, game::orientation_t*, const float*, float*)>(0x4896C0) (draw->elemDef, draw->randomSeed, draw->msecLifeSpan, draw->msecElapsed, &draw->orient, draw->elem->baseVel, draw->velDirWorld);
+
+
 		Vec3Normalize(draw->velDirWorld);
 
 		if (!FX_CullElementForDraw_Tail(draw))
 		{
-			draw->posWorld[0] = draw->velDirWorld[0] * -draw->visState.size[1] + draw->posWorld[0];
-			draw->posWorld[1] = draw->velDirWorld[1] * -draw->visState.size[1] + draw->posWorld[1];
-			draw->posWorld[2] = draw->velDirWorld[2] * -draw->visState.size[1] + draw->posWorld[2];
+			draw->posWorld[0] = (draw->velDirWorld[0] * -draw->visState.size[1]) + draw->posWorld[0];
+			draw->posWorld[1] = (draw->velDirWorld[1] * -draw->visState.size[1]) + draw->posWorld[1];
+			draw->posWorld[2] = (draw->velDirWorld[2] * -draw->visState.size[1]) + draw->posWorld[2];
 
 			const float deltaCamera[3] =
 			{
@@ -94,6 +97,27 @@ namespace fx_system
 			float normal[3] = {};
 			Vec3Cross(tangent, draw->velDirWorld, normal);
 			FX_GenSpriteVerts(draw, normal, tangent, draw->velDirWorld);
+
+			//auto binormal = draw->velDirWorld;
+			// FxDrawState *draw@<edx>, float *normal@<ecx>, float *tangent, float *binormal
+			/*const static uint32_t func_addr = 0x48BE80;
+			__asm
+			{
+				pushad;
+
+				push	binormal;
+
+				lea		eax, tangent;
+				push	eax;
+
+				lea		ecx, normal
+
+				mov		edx, draw;
+				call	func_addr;
+				add		esp, 8;
+
+				popad;
+			}*/
 		}
 	}
 
@@ -1389,26 +1413,7 @@ namespace fx_system
 				draw->posWorld[2] + left[2]
 			};
 
-			r_double_index_t index;
-			r_double_index_t* indices = baseIndices;
-
-			index.value[0] = baseVertex;
-			index.value[1] = baseVertex + 1;
-
-			*baseIndices = index;
-			++indices;
-
-			index.value[0] = baseVertex + 2;
-			index.value[1] = baseVertex + 2;
-
-			*indices++ = index;
-			index.value[0] = baseVertex + 3;
-
-			index.value[1] = baseVertex;
-			*indices++ = index;
-
 			float s0, ds, t0, dt;
-
 			FX_GetSpriteTexCoords(draw, &s0, &ds, &t0, &dt);
 
 			game::PackedUnitVec p_nrm = {};
@@ -1422,6 +1427,22 @@ namespace fx_system
 			p_tan.array[1] = static_cast<char>(((rotatedTangent[1] * 127.0f) + 127.5f));
 			p_tan.array[2] = static_cast<char>(((rotatedTangent[2] * 127.0f) + 127.5f));
 			p_tan.array[3] = 63;
+
+			r_double_index_t index;
+			r_double_index_t* indices = baseIndices;
+
+			index.value[0] = baseVertex;
+			index.value[1] = baseVertex + 1;
+			*baseIndices = index;
+			++indices;
+
+			index.value[0] = baseVertex + 2;
+			index.value[1] = baseVertex + 2;
+			*indices++ = index;
+
+			index.value[0] = baseVertex + 3;
+			index.value[1] = baseVertex;
+			*indices++ = index;
 
 			float testBinormal[3] = {};
 			Vec3Cross(normal, rotatedTangent, testBinormal);
