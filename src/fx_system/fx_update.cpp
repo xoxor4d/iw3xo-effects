@@ -280,7 +280,7 @@ namespace fx_system
 		}
 	}
 
-	// assert (props/powerTower_leg.fx)
+	// checked
 	char FX_ProcessEmitting(char emitResidual, FxUpdateElem* update, FxSystem* system, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd)
 	{
 		FxSpatialFrame frameElemNow = {};
@@ -301,7 +301,7 @@ namespace fx_system
 
 		const float baseDistPerEmit = ((fx_randomTable[20 + update->randomSeed] * elemDef->emitDist.amplitude) + elemDef->emitDist.base) + elemDef->emitDistVariance.base;
 		const float maxDistPerEmit = baseDistPerEmit + elemDef->emitDistVariance.amplitude;
-		float distNextEmit = -((static_cast<float>(emitResidual) * maxDistPerEmit) * 0.00390625f);
+		float distNextEmit = -((static_cast<float>(static_cast<std::uint8_t>(emitResidual)) * maxDistPerEmit) * 0.00390625f);
 
 		while (true)
 		{
@@ -313,7 +313,7 @@ namespace fx_system
 				break;
 			}
 
-			if ((distNextEmit - 0.0f) < 0.0f)
+			if (distNextEmit < 0.0f)
 			{
 				distNextEmit = 0.0f;
 			}
@@ -325,9 +325,7 @@ namespace fx_system
 			Vec3Cross(axisSpawn[0], axisSpawn[1], axisSpawn[2]);
 
 
-			//handle = FX_SpawnEffect(system, elemDef->effectEmitted.handle, msecAtSpawn, frameElemNow.origin, axisSpawn, 2047, 511, 255, update->effect->owner, 0x3FFu, &orIdentity);
-			FxEffect* effect = FX_SpawnEffect(system, elemDef->effectEmitted.handle, msecAtSpawn, frameElemNow.origin, (const float(*)[3])axisSpawn, FX_SPAWN_DOBJ_HANDLES, FX_SPAWN_BONE_INDEX, 255, update->effect->owner, FX_SPAWN_MARK_ENTNUM);
-
+			FxEffect* effect = FX_SpawnEffect(system, elemDef->effectEmitted.handle, msecAtSpawn, frameElemNow.origin, axisSpawn, FX_SPAWN_DOBJ_HANDLES, FX_SPAWN_BONE_INDEX, 255, update->effect->owner, FX_SPAWN_MARK_ENTNUM);
 			if (effect)
 			{
 				FX_DelRefToEffect(system, effect);
@@ -342,7 +340,8 @@ namespace fx_system
 			Assert();
 		}
 
-		return static_cast<char>(((256.0f * residual) / maxDistPerEmit) + 9.313225746154785e-10);
+		// int cast required
+		return static_cast<char>( static_cast<int>(((256.0f * residual) / maxDistPerEmit) + 9.313225746154785e-10) );
 	}
 
 	bool FX_ShouldProcessEffect(FxEffect* effect, FxSystem* system, bool nonBoltedEffectsOnly)
