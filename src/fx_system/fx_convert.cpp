@@ -1,7 +1,7 @@
 #include "std_include.hpp"
 
-#define Assert()	if(IsDebuggerPresent()) __debugbreak();	\
-					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__)
+#define Assert()	if(IsDebuggerPresent()) __debugbreak();	else {	\
+					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__); }
 
 // #ENV_DEPENDENT
 #define Warning(unused, fmt, ...)	if(IsDebuggerPresent()) __debugbreak();	else {\
@@ -703,7 +703,14 @@ namespace fx_system
 		int elemCount = 0;
 		for (int elemIndex = 0; elemIndex < editorEffect->elemCount; ++elemIndex)
 		{
+			// skip disabled elemDefs
+			if ((editorEffect->elems[elemIndex].editorFlags & FX_ED_FLAG_DISABLED) != 0)
+			{
+				continue;
+			}
+
 			FxEffectDef* emission = editorEffect->elems[elemIndex].emission;
+
 			if (emission && emission->elemDefCountOneShot && FX_FindEmission(editorEffect, emission) == elemIndex)
 			{
 				const int elemIndexStop = emission->elemDefCountOneShot + emission->elemDefCountLooping;
@@ -734,6 +741,7 @@ namespace fx_system
 				}
 			}
 		}
+
 		return elemCount;
 	}
 
@@ -1278,6 +1286,11 @@ namespace fx_system
 			}
 		}
 
+		if(!elemCountTotal)
+		{
+			return nullptr;
+		}
+
 		int velStateCount[32];
 		int visStateCount[32];
 
@@ -1352,7 +1365,10 @@ namespace fx_system
 			visStateCount, 
 			&memPool);
 
-		effect->elemDefCountEmission = FX_CopyEmittedElemDefs(&effect->elemDefs[effect->elemDefCountOneShot + effect->elemDefCountLooping], editorEffect, &memPool);
+		effect->elemDefCountEmission = FX_CopyEmittedElemDefs(
+			&effect->elemDefs[effect->elemDefCountOneShot + effect->elemDefCountLooping], 
+			editorEffect, 
+			&memPool);
 
 		if (effect->elemDefCountEmission + effect->elemDefCountOneShot + effect->elemDefCountLooping != elemCountTotal)
 		{
@@ -1375,18 +1391,8 @@ namespace fx_system
 		effect->name = memPool;
 
 		strcpy((char*)effect->name, editorEffect->name);
-		/*char* str_ptr = (char*)effect->name;
-		char str_char;
-		do
-		{
-			str_char = editorEffect->name[0];
-			*str_ptr = editorEffect->name[0];
-			editorEffect = (FxEditorEffectDef*)((char*)editorEffect + 1);
-			++str_ptr;
-
-		} while (str_char);*/
-
 		memPool += &effect->name[strlen(effect->name) + 1] - effect->name;
+
 		if (memPool - reinterpret_cast<char*>(effect) != effect->totalSize)
 		{
 			Assert();
