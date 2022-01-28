@@ -47,4 +47,5 @@ namespace fx_system
 	void	FX_ConvertElemDef(FxElemDef* elemDef, FxEditorElemDef* edElemDef, int velStateCount, int visStateCount, char** memPool);
 	int		FX_ConvertElemDefsOfType(const int* velStateCount, FxElemDef* elemDefArray, FxEditorEffectDef* editorEffect, int loopingFlagState, const int* visStateCount, char** memPool);
 
+	FxEffectDef* FX_Convert(FxEditorEffectDef* editorEffect, void* (__cdecl* Alloc)(int));
 }

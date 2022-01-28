@@ -83,9 +83,9 @@ namespace fx_system
 		if (msecBegin > effect->msecLastUpdate)
 		{
 			std::uint16_t lastElemHandle[3];
-			lastElemHandle[0] = -1;
-			lastElemHandle[1] = -1;
-			lastElemHandle[2] = -1;
+			lastElemHandle[0] = UINT16_MAX; //-1;
+			lastElemHandle[1] = UINT16_MAX;
+			lastElemHandle[2] = UINT16_MAX;
 			FX_UpdateEffectPartial(system, effect, effect->msecLastUpdate, msecBegin, 0.0f, 0.0f, firstOldElemHandle, lastElemHandle, nullptr, lastOldTrailElemHandle);
 		}
 

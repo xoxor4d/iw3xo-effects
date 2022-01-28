@@ -281,6 +281,7 @@ namespace fx_system
 		}
 	}
 
+	// assert (props/powerTower_leg.fx)
 	char FX_ProcessEmitting(char emitResidual, FxUpdateElem* update, FxSystem* system, FxSpatialFrame* frameBegin, FxSpatialFrame* frameEnd)
 	{
 		FxSpatialFrame frameElemNow = {};
@@ -337,7 +338,7 @@ namespace fx_system
 		}
 
 		const float residual = distInUpdate - distLastEmit;
-		if ((distInUpdate - distLastEmit) < -0.001f || (maxDistPerEmit + 0.001f) < residual)
+		if (residual < -0.001f || maxDistPerEmit + 0.001f < residual)
 		{
 			Assert();
 		}

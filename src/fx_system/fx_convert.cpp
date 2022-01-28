@@ -4,10 +4,10 @@
 					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__)
 
 // #ENV_DEPENDENT
-#define Warning(unused, fmt, ...)	if(IsDebuggerPresent()) __debugbreak();	\
+#define Warning(unused, fmt, ...)	if(IsDebuggerPresent()) __debugbreak();	else {\
 									game::allow_warnings = true; \
 									game::Com_PrintError(unused, fmt, __VA_ARGS__); \
-									game::allow_warnings = false
+									game::allow_warnings = false; }
 
 #define SLODWORD(x)  (*((int*)&(x)))
 
@@ -239,47 +239,61 @@ namespace fx_system
 		}
 	}
 
-	// CHECK!
 	float FX_MaxErrorForIntervalCount(int dimensions, int sampleCount, const float* samples, int intervalCount, float errorCutoff)
 	{
 		if (dimensions <= 0 || sampleCount <= 1 || !samples)
 		{
-			__debugbreak();
+			Assert();
 		}
-		
-		int componentCount = dimensions + 1;
+
+		if (intervalCount < 1)
+		{
+			return 0.0f;
+		}
+
+		const int componentCount = dimensions + 1;
 		float errorMax = 0.0f;
 		float timePrev = 0.0f;
-		int sampleIndexPrev = 1;
-
-		float lerpedValuePrev[3];
-		memcpy(lerpedValuePrev, samples + 1, 4 * dimensions);
 
 		int sampleIndexNext = 0;
+		int sampleIndexPrev = 1;
+
+		float timeNext;
+		float lerpedValuePrev[3];
+
+		if (dimensions)
+		{
+			memcpy(lerpedValuePrev, samples + 1, 4 * dimensions);
+		}
 
 		for (int intervalIndex = 1; intervalIndex <= intervalCount; ++intervalIndex)
 		{
-			for (sampleIndexNext = sampleIndexPrev; (float)intervalIndex > (float)intervalCount * samples[componentCount * sampleIndexNext]; ++sampleIndexNext) 
+			const auto flt_intervalIndex = static_cast<float>(intervalIndex);
+			const auto flt_invervalCount = static_cast<float>(intervalCount);
+
+			for (sampleIndexNext = sampleIndexPrev; flt_intervalIndex > (flt_invervalCount * samples[componentCount * sampleIndexNext]); 
+				++sampleIndexNext)
 			{ }
 
-			float timeNext = (float)intervalIndex / (float)intervalCount;
+			timeNext = flt_intervalIndex / flt_invervalCount;
 			const float* samplesTo = &samples[componentCount * sampleIndexNext];
 			const float* samplesFrom = &samplesTo[-componentCount];
 
-			float lerpedValueNext[3];
+			float lerpedValueNext[3] = {};
 			FX_InterpolateSamples(dimensions, *samplesFrom, samplesFrom + 1, *samplesTo, samplesTo + 1, timeNext, lerpedValueNext);
 
 			for (int sampleIndexIter = sampleIndexPrev; sampleIndexIter < sampleIndexNext; ++sampleIndexIter)
 			{
-				float lerpedValueIter[3];
+				float lerpedValueIter[3] = {};
 				FX_InterpolateSamples(dimensions, timePrev, lerpedValuePrev, timeNext, lerpedValueNext, samples[componentCount * sampleIndexIter], lerpedValueIter);
 
 				for (int componentIndex = 1; componentIndex < componentCount; ++componentIndex)
 				{
-					float error = samples[componentIndex + componentCount * sampleIndexIter] - fabs(lerpedValueIter[componentIndex]);
+					const float error = fabs(samples[componentIndex + componentCount * sampleIndexIter] - lerpedValueIter[componentIndex - 1]); // lerpedValueIter[componentIndex] :: -1 !
 					if (error > errorMax)
 					{
 						errorMax = error;
+
 						if (error > errorCutoff)
 						{
 							return errorMax;
@@ -288,7 +302,10 @@ namespace fx_system
 				}
 			}
 
-			memcpy(lerpedValuePrev, lerpedValueNext, 4 * dimensions);
+			if (dimensions)
+			{
+				memcpy(lerpedValuePrev, lerpedValueNext, 4 * dimensions);
+			}
 
 			sampleIndexPrev = sampleIndexNext;
 			timePrev = timeNext;
@@ -484,8 +501,14 @@ namespace fx_system
 		return intervalLimit;
 	}
 
+	// should be good
 	int FX_DecideSampleCount(int curveCount, FxCurve** curves, int intervalLimit)
 	{
+		if (intervalLimit < 1)
+		{
+			return 2;
+		}
+
 		float errorBest = 3.4028235e38f;
 		int intervalCountBest = 1;
 
@@ -494,7 +517,7 @@ namespace fx_system
 			float errorCumulative = 0.0f;
 			for (int curveIndex = 0; curveIndex < curveCount; ++curveIndex)
 			{
-				float error = FX_MaxErrorForIntervalCount(curves[curveIndex]->dimensionCount, curves[curveIndex]->keyCount, curves[curveIndex]->keys, intervalCount, errorBest);
+				const float error = FX_MaxErrorForIntervalCount(curves[curveIndex]->dimensionCount, curves[curveIndex]->keyCount, (float*)&curves[curveIndex][1].dimensionCount, intervalCount, errorBest); // samples: curves[curveIndex]->keys
 				if (error > errorCumulative)
 				{
 					errorCumulative = error;
@@ -544,6 +567,7 @@ namespace fx_system
 	{
 		FxCurve* curves[12]; 
 		int curveCount = 0;
+		int cc = 0;
 
 		for (unsigned int chanIndex = 0; chanIndex < 5; ++chanIndex)
 		{
@@ -551,7 +575,7 @@ namespace fx_system
 			{
 			case FX_CHAN_RGBA:
 				curves[curveCount] = edElem->color[0];
-				int cc = curveCount + 1;
+				cc = curveCount + 1;
 				if ((edElem->editorFlags & FX_ED_FLAG_USE_RANDOM_COLOR) != 0)
 				{
 					curves[cc++] = edElem->color[1];
@@ -1061,12 +1085,13 @@ namespace fx_system
 		elemDef->visStateIntervalCount = 0;
 		if (visStateCount)
 		{
-			elemDef->visStateIntervalCount = visStateCount - 1;
+			elemDef->visStateIntervalCount = static_cast<char>(visStateCount - 1);
 		}
 		
 		FX_ReserveElemDefMemory(elemDef, memPool);
 
-		// #ENV_DEPENDENT
+
+		// #UNFINISHED
 		//FX_SampleVelocity(edElemDef, elemDef); // FxEditorElemDef *edElemDef@<eax>, FxElemDef *elemDef@<esi>
 		const static uint32_t FX_SampleVelocity = 0x47DB50;
 		__asm
@@ -1082,7 +1107,7 @@ namespace fx_system
 
 		if (visStateCount)
 		{
-			// #ENV_DEPENDENT
+			// #UNFINISHED
 			//FX_SampleVisualState(elemDef, edElemDef);
 			utils::hook::call<void(__cdecl)(FxElemDef*, FxEditorElemDef*)>(0x47DDA0)(elemDef, edElemDef);
 		}
@@ -1202,5 +1227,171 @@ namespace fx_system
 		}
 
 		return elemCount;
+	}
+
+	FxEffectDef* FX_Convert(FxEditorEffectDef* editorEffect, void* (__cdecl* Alloc)(int))
+	{
+		if (!editorEffect)
+		{
+			Assert();
+		}
+
+		int elemIndex;
+		FxEditorElemDef* edElemDef;
+
+		int emitIndex[32];
+		memset(emitIndex, -1, sizeof(emitIndex));
+
+		int totalBytesNeeded =  editorEffect->elemCount * sizeof(FxElemDef) + sizeof(FxEffectDef); // corr
+		int elemCountTotal = editorEffect->elemCount;
+
+		for (elemIndex = 0; elemIndex < editorEffect->elemCount; ++elemIndex)
+		{
+			edElemDef = &editorEffect->elems[elemIndex];
+
+			// decrease total bytes and elemcount if elem is disabled
+			if (editorEffect->elems[elemIndex].editorFlags < 0)
+			{
+				totalBytesNeeded -= sizeof(FxElemDef);
+				--elemCountTotal;
+			}
+
+			if (editorEffect->elems[elemIndex].elemType == FX_ELEM_TYPE_MODEL && (edElemDef->flags & FX_ELEM_USE_MODEL_PHYSICS) != 0)
+			{
+				for (int visualIndex = 0; visualIndex < edElemDef->visualCount; ++visualIndex)
+				{
+					FxElemVisuals* elemVisual = &edElemDef->u.visuals[visualIndex];
+					if (elemVisual->model)
+					{
+						// #NOT_IMPL
+
+						edElemDef->flags &= ~FX_ELEM_USE_MODEL_PHYSICS;
+						Warning(0, "Physics not yet implemented!");
+
+						//if (!elemVisual->model->physPreset)
+						//{
+						//	//elemVisual->model->physPreset = FX_RegisterPhysPreset("default");
+						//	Warning(20, "ERROR: no physics preset specified for the FX model [%s]\n", elemVisual->model->name);
+						//}
+					}
+				}
+			}
+		}
+
+		int velStateCount[32];
+		int visStateCount[32];
+
+		int elemdef_bytes = 0;
+
+		for (elemIndex = 0; elemIndex < editorEffect->elemCount; ++elemIndex)
+		{
+			edElemDef = &editorEffect->elems[elemIndex];
+
+			// skip disabled elemDefs
+			if((edElemDef->editorFlags & FX_ED_FLAG_DISABLED) != 0)
+			{
+				continue;
+			}
+
+			if (!FX_Validate(edElemDef, editorEffect))
+			{
+				return nullptr;
+			}
+
+			FxSampleChannel routing[5];
+			FX_GetVisualSampleRouting(edElemDef, routing);
+
+			const int intervalLimit = FX_DecideIntervalLimit(edElemDef);
+
+			velStateCount[elemIndex] = FX_DecideVelocitySampleCount(edElemDef, intervalLimit);
+			visStateCount[elemIndex] = FX_DecideVisualSampleCount(edElemDef, routing, intervalLimit);
+
+			elemdef_bytes += FX_AdditionalBytesNeededForElemDef(visStateCount[elemIndex], velStateCount[elemIndex], edElemDef->visualCount, edElemDef->elemType);
+			elemdef_bytes += FX_AdditionalBytesNeededForGeomTrail(edElemDef);
+
+			if (edElemDef->emission && edElemDef->emission->elemDefCountOneShot)
+			{
+				const int firstEmitted = FX_FindEmission(editorEffect, edElemDef->emission);
+				if (firstEmitted == elemIndex)
+				{
+					emitIndex[elemIndex] = elemCountTotal;
+
+					elemCountTotal += edElemDef->emission->elemDefCountOneShot;
+					elemdef_bytes += FX_AdditionalBytesNeededForEmission(edElemDef->emission);
+				}
+				else
+				{
+					emitIndex[elemIndex] = emitIndex[firstEmitted];
+				}
+			}
+		}
+
+		totalBytesNeeded += elemdef_bytes;
+		totalBytesNeeded += static_cast<int>( strlen(editorEffect->name) + 1 );
+
+		FxEffectDef* effect = (FxEffectDef*)Alloc(totalBytesNeeded);
+		effect->elemDefs = (FxElemDef*)&effect[1];
+
+		char* memPool;
+		memPool = (char*)&effect[1];
+		memPool += elemCountTotal * sizeof(FxElemDef);
+		
+		effect->elemDefCountLooping = FX_ConvertElemDefsOfType(
+			velStateCount, 
+			effect->elemDefs, 
+			editorEffect,
+			1,
+			visStateCount, 
+			&memPool);
+
+		effect->elemDefCountOneShot = FX_ConvertElemDefsOfType(
+			velStateCount, 
+			&effect->elemDefs[effect->elemDefCountLooping], 
+			editorEffect, 
+			0, 
+			visStateCount, 
+			&memPool);
+
+		effect->elemDefCountEmission = FX_CopyEmittedElemDefs(&effect->elemDefs[effect->elemDefCountOneShot + effect->elemDefCountLooping], editorEffect, &memPool);
+
+		if (effect->elemDefCountEmission + effect->elemDefCountOneShot + effect->elemDefCountLooping != elemCountTotal)
+		{
+			Assert();
+		}
+
+		int effectFlags = 0;
+		for (elemIndex = 0; elemIndex != elemCountTotal; ++elemIndex)
+		{
+			if (static_cast<float>( static_cast<std::uint8_t>( effect->elemDefs[elemIndex].lightingFrac )) != 0.0f)
+			{
+				effectFlags |= 1u;
+				break;
+			}
+		}
+
+		effect->flags = effectFlags;
+		effect->msecLoopingLife = FX_GetLoopingLife(effect);
+		effect->totalSize = totalBytesNeeded;
+		effect->name = memPool;
+
+		strcpy((char*)effect->name, editorEffect->name);
+		/*char* str_ptr = (char*)effect->name;
+		char str_char;
+		do
+		{
+			str_char = editorEffect->name[0];
+			*str_ptr = editorEffect->name[0];
+			editorEffect = (FxEditorEffectDef*)((char*)editorEffect + 1);
+			++str_ptr;
+
+		} while (str_char);*/
+
+		memPool += &effect->name[strlen(effect->name) + 1] - effect->name;
+		if (memPool - reinterpret_cast<char*>(effect) != effect->totalSize)
+		{
+			Assert();
+		}
+
+		return effect;
 	}
 }
