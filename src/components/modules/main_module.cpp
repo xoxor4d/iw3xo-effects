@@ -115,12 +115,9 @@ namespace components
 		utils::hook::detour(0x4740E0, fx_system::FX_SpawnEffect, HK_JUMP);
 		utils::hook::detour(0x487050, fx_system::FX_UpdateElement, HK_JUMP);
 		utils::hook::detour(0x4E64E0, fx_system::Sys_DoWorkerCmd, HK_JUMP);
-
 		utils::hook::detour(0x475A70, fx_system::FX_RetriggerEffect, HK_JUMP);
-
 		utils::hook::detour(0x47F840, fx_system::FX_Convert, HK_JUMP);
 
-		// FX_RetriggerEffect
 
 		//utils::hook(0x475A00, fx_system::FX_ElemFromHandleTest, HOOK_CALL).install()->quick();
 
