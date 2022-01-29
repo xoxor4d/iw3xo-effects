@@ -517,7 +517,7 @@ namespace fx_system
 			float errorCumulative = 0.0f;
 			for (int curveIndex = 0; curveIndex < curveCount; ++curveIndex)
 			{
-				const float error = FX_MaxErrorForIntervalCount(curves[curveIndex]->dimensionCount, curves[curveIndex]->keyCount, (float*)&curves[curveIndex][1].dimensionCount, intervalCount, errorBest); // samples: curves[curveIndex]->keys
+				const float error = FX_MaxErrorForIntervalCount(curves[curveIndex]->dimensionCount, curves[curveIndex]->keyCount, curves[curveIndex]->keys, intervalCount, errorBest);
 				if (error > errorCumulative)
 				{
 					errorCumulative = error;
@@ -662,12 +662,12 @@ namespace fx_system
 
 		if (useVelocity[0])
 		{
-			velEpsilonSq = Vec3LengthSq(velScale[0]); //(*velScale)[0] * (*velScale)[0] + (*velScale)[1] * (*velScale)[1] + (*velScale)[2] * (*velScale)[2];
+			velEpsilonSq = (*velScale)[0] * (*velScale)[0] + (*velScale)[1] * (*velScale)[1] + (*velScale)[2] * (*velScale)[2]; // Vec3LengthSq(velScale[0]);
 		}
 
 		if (useVelocity[1])
 		{
-			velEpsilonSq = Vec3LengthSq(velScale[3]) + velEpsilonSq; //(*velScale)[3] * (*velScale)[3] + (*velScale)[4] * (*velScale)[4] + (*velScale)[5] * (*velScale)[5] + velEpsilonSq;
+			velEpsilonSq = (*velScale)[3] * (*velScale)[3] + (*velScale)[4] * (*velScale)[4] + (*velScale)[5] * (*velScale)[5] + velEpsilonSq; // Vec3LengthSq(velScale[3]) + velEpsilonSq;
 		}
 
 		bool anyNonZero = false;
@@ -705,6 +705,7 @@ namespace fx_system
 
 			if (useVelocity[1])
 			{
+				float velocitySample[3];
 				velocitySample[0] = FX_SampleCurve1D(edElemDef->velShape[1][0][0], (*velScale)[3], sampleTime);
 				velocitySample[1] = FX_SampleCurve1D(edElemDef->velShape[1][1][0], (*velScale)[4], sampleTime);
 				velocitySample[2] = FX_SampleCurve1D(edElemDef->velShape[1][2][0], (*velScale)[5], sampleTime);
@@ -733,7 +734,7 @@ namespace fx_system
 
 				if (!anyNonZero)
 				{
-					anyNonZero = Vec3LengthSq(velState->totalDelta.base) > velEpsilonSq * 0.000001f; //velState->totalDelta.base[0] * velState->totalDelta.base[0] + velState->totalDelta.base[1] * velState->totalDelta.base[1] + velState->totalDelta.base[2] * velState->totalDelta.base[2] > velEpsilonSq * 0.000001f;
+					anyNonZero = velState->totalDelta.base[0] * velState->totalDelta.base[0] + velState->totalDelta.base[1] * velState->totalDelta.base[1] + velState->totalDelta.base[2] * velState->totalDelta.base[2] > velEpsilonSq * 0.000001f; // Vec3LengthSq(velState->totalDelta.base) > velEpsilonSq * 0.000001f;
 				}
 			}
 			else
@@ -759,6 +760,7 @@ namespace fx_system
 
 			if (velStatePrev)
 			{
+				float deltaInSegment[3];
 				deltaInSegment[0] = (velStatePrev->velocity.amplitude[0] + velState->velocity.amplitude[0]) * 0.5f;
 				deltaInSegment[1] = (velStatePrev->velocity.amplitude[1] + velState->velocity.amplitude[1]) * 0.5f;
 				deltaInSegment[2] = (velStatePrev->velocity.amplitude[2] + velState->velocity.amplitude[2]) * 0.5f;
@@ -768,7 +770,7 @@ namespace fx_system
 
 				if (!anyNonZero)
 				{
-					anyNonZero = Vec3LengthSq(velState->totalDelta.amplitude) > velEpsilonSq * 0.000001f; //velState->totalDelta.amplitude[0] * velState->totalDelta.amplitude[0] + velState->totalDelta.amplitude[1] * velState->totalDelta.amplitude[1] + velState->totalDelta.amplitude[2] * velState->totalDelta.amplitude[2] > velEpsilonSq * 0.000001f;
+					anyNonZero = velState->totalDelta.amplitude[0] * velState->totalDelta.amplitude[0] + velState->totalDelta.amplitude[1] * velState->totalDelta.amplitude[1] + velState->totalDelta.amplitude[2] * velState->totalDelta.amplitude[2] > velEpsilonSq * 0.000001f; // Vec3LengthSq(velState->totalDelta.amplitude) > velEpsilonSq * 0.000001f;
 				}
 			}
 			else
@@ -786,6 +788,23 @@ namespace fx_system
 		{
 			elemDef->flags |= useGraphBit;
 		}
+	}
+
+	void FX_SampleVelocity(FxEditorElemDef* edElemDef, FxElemDef* elemDef)
+	{
+		float velScale[2][3];
+		const float interval = 1.0f / (static_cast<float>( static_cast<std::uint8_t>(elemDef->velIntervalCount) ) * 1000.0f);
+
+		velScale[0][0] = interval * edElemDef->velScale[0][0];
+		velScale[0][1] = interval * edElemDef->velScale[0][1];
+		velScale[0][2] = interval * edElemDef->velScale[0][2];
+		
+		velScale[1][0] = interval * edElemDef->velScale[1][0];
+		velScale[1][1] = interval * edElemDef->velScale[1][1];
+		velScale[1][2] = interval * edElemDef->velScale[1][2];
+
+		FX_SampleVelocityInFrame(&elemDef->velSamples->local, 2, edElemDef, elemDef, velScale, FX_ELEM_HAS_VELOCITY_GRAPH_LOCAL);
+		FX_SampleVelocityInFrame(&elemDef->velSamples->world, 2, edElemDef, elemDef, velScale, FX_ELEM_HAS_VELOCITY_GRAPH_WORLD);
 	}
 
 	void FX_BoundFloatRange(FxFloatRange* range, float lower, float upper)
@@ -1243,9 +1262,12 @@ namespace fx_system
 		FX_ReserveElemDefMemory(elemDef, memPool);
 
 
+		
+		FX_SampleVelocity(edElemDef, elemDef);
+
 		// #UNFINISHED
-		//FX_SampleVelocity(edElemDef, elemDef); // FxEditorElemDef *edElemDef@<eax>, FxElemDef *elemDef@<esi>
-		const static uint32_t FX_SampleVelocity = 0x47DB50;
+		// FxEditorElemDef *edElemDef@<eax>, FxElemDef *elemDef@<esi>
+		/*const static uint32_t FX_SampleVelocity = 0x47DB50;
 		__asm
 		{
 			pushad;
@@ -1255,7 +1277,7 @@ namespace fx_system
 			call	FX_SampleVelocity;
 
 			popad;
-		}
+		}*/
 
 		if (visStateCount)
 		{

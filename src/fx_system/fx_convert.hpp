@@ -28,6 +28,9 @@ namespace fx_system
 	int		FX_DecideVelocitySampleCount(FxEditorElemDef* edElem, int intervalLimit);
 	int		FX_DecideVisualSampleCount(FxEditorElemDef* edElem, FxSampleChannel* routing, int intervalLimit);
 
+	void	FX_SampleVelocityInFrame(FxElemVelStateInFrame* velState, int velStateStride, FxEditorElemDef* edElemDef, FxElemDef* elemDef, const float(*velScale)[3], int useGraphBit);
+	void	FX_SampleVelocity(FxEditorElemDef* edElemDef, FxElemDef* elemDef);
+
 	void	FX_BoundFloatRange(FxFloatRange* range, float lower, float upper);	
 	void	FX_ScaleFloatRange(FxFloatRange* from, FxFloatRange* to, float scale);
 

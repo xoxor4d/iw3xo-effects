@@ -599,7 +599,14 @@ namespace fx_system
 	{
 		int dimensionCount;
 		int keyCount;
+		int refCount;
 		float keys[1];
+	};
+
+	struct FxCurveIterator
+	{
+		FxCurve* master;
+		int currentKeyIndex;
 	};
 
 	union $334D0C15980AB47FC3D96222348DFC54
