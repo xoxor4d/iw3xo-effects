@@ -27,6 +27,8 @@ namespace fx_system
 	bool	Vec4IsNormalized(const float* v);
 	float	Vec4Normalize(float* v);
 
+	void	Byte4PackVertexColor(const float* from, char* to);
+
 	float	Abs(const float* v);
 	void	MatrixMultiply(const float(*in1)[3], const float(*in2)[3], float(*out)[3]);
 

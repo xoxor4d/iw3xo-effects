@@ -30,6 +30,8 @@ namespace fx_system
 
 	void	FX_SampleVelocityInFrame(FxElemVelStateInFrame* velState, int velStateStride, FxEditorElemDef* edElemDef, FxElemDef* elemDef, const float(*velScale)[3], int useGraphBit);
 	void	FX_SampleVelocity(FxEditorElemDef* edElemDef, FxElemDef* elemDef);
+	void	FX_SampleVisualStateScalar(FxSampleChannel routing, float* amplitude, float* base, FxEditorElemDef* edElemDef, float sampleTime, float scaleFactor);
+	void	FX_SampleVisualState(FxElemDef* elemDef, FxEditorElemDef* edElemDef);
 
 	void	FX_BoundFloatRange(FxFloatRange* range, float lower, float upper);	
 	void	FX_ScaleFloatRange(FxFloatRange* from, FxFloatRange* to, float scale);

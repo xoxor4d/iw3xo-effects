@@ -413,6 +413,31 @@ namespace fx_system
 		return length;
 	}
 
+	char Byte1PackClamp(const float from)
+	{
+		const int pack = static_cast<int>( static_cast<double>( from * 255.0f ) + 9.313225746154785e-10 );
+
+		if(pack > 255)
+		{
+			return -1;
+		}
+
+		if(pack < 0)
+		{
+			return 0;
+		}
+
+		return pack;
+	}
+
+	void Byte4PackVertexColor(const float* from, char* to)
+	{
+		to[2] = Byte1PackClamp(from[0]);
+		to[1] = Byte1PackClamp(from[1]);
+		to[0] = Byte1PackClamp(from[2]);
+		to[3] = Byte1PackClamp(from[3]);
+	}
+
 	float Abs(const float* v)
 	{
 		return sqrtf((v[0] * v[0] + v[1] * v[1]) + v[2] * v[2]);

@@ -124,6 +124,21 @@ namespace fx_system
 		return (intermediateTime - key[0]) * (key[3] - key[1]) / (key[2] - key[0]) + key[1];
 	}
 
+	void FxCurve_Interpolate3d(const float* key, float intermediateTime, float* result)
+	{
+		if (intermediateTime < key[0] || key[4] < intermediateTime || key[4] == key[0])
+		{
+
+			Assert();
+		}
+
+		const float lerp = (intermediateTime - key[0]) / (key[4] - key[0]);
+
+		result[0] = (key[5] - key[1]) * lerp + key[1];
+		result[1] = (key[6] - key[2]) * lerp + key[2];
+		result[2] = (key[7] - key[3]) * lerp + key[3];
+	}
+
 	float FxCurveIterator_SampleTime(FxCurveIterator* source, float time)
 	{
 		FxCurveIterator_MoveToTime(source, time);
@@ -135,6 +150,23 @@ namespace fx_system
 		return FxCurve_Interpolate1d(&source->master->keys[2 * source->currentKeyIndex], time);
 	}
 
+	void FxCurveIterator_SampleTimeVec3(FxCurveIterator* source, float* replyVector, float time)
+	{
+		if (source->master->refCount <= 0)
+		{
+			Assert();
+		}
+
+		FxCurveIterator_MoveToTime(source, time);
+
+		if (source->currentKeyIndex >= static_cast<std::uint32_t>(source->master->keyCount - 1))
+		{
+			Assert();
+		}
+
+		FxCurve_Interpolate3d(source->master[source->currentKeyIndex].keys, time, replyVector);
+	}
+
 	float FX_SampleCurve1D(FxCurve* curve, float scale, float time)
 	{
 		FxCurveIterator iter = {};
@@ -144,6 +176,20 @@ namespace fx_system
 		FxCurveIterator_Release(&iter);
 
 		return value;
+	}
+
+	void FX_SampleCurve3D(FxCurve* curve, float* value, float scale, float time)
+	{
+		FxCurveIterator iter;
+
+		FxCurveIterator_Create(&iter, curve);
+		FxCurveIterator_SampleTimeVec3(&iter, value, time);
+
+		value[0] = value[0] * scale;
+		value[1] = value[1] * scale;
+		value[2] = value[2] * scale;
+
+		FxCurveIterator_Release(&iter);
 	}
 
 }

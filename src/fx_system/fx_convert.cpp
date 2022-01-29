@@ -662,12 +662,12 @@ namespace fx_system
 
 		if (useVelocity[0])
 		{
-			velEpsilonSq = (*velScale)[0] * (*velScale)[0] + (*velScale)[1] * (*velScale)[1] + (*velScale)[2] * (*velScale)[2]; // Vec3LengthSq(velScale[0]);
+			velEpsilonSq = Vec3LengthSq(velScale[0]);
 		}
 
 		if (useVelocity[1])
 		{
-			velEpsilonSq = (*velScale)[3] * (*velScale)[3] + (*velScale)[4] * (*velScale)[4] + (*velScale)[5] * (*velScale)[5] + velEpsilonSq; // Vec3LengthSq(velScale[3]) + velEpsilonSq;
+			velEpsilonSq = Vec3LengthSq(velScale[3]) + velEpsilonSq;
 		}
 
 		bool anyNonZero = false;
@@ -734,7 +734,7 @@ namespace fx_system
 
 				if (!anyNonZero)
 				{
-					anyNonZero = velState->totalDelta.base[0] * velState->totalDelta.base[0] + velState->totalDelta.base[1] * velState->totalDelta.base[1] + velState->totalDelta.base[2] * velState->totalDelta.base[2] > velEpsilonSq * 0.000001f; // Vec3LengthSq(velState->totalDelta.base) > velEpsilonSq * 0.000001f;
+					anyNonZero = Vec3LengthSq(velState->totalDelta.base) > velEpsilonSq * 0.000001f;
 				}
 			}
 			else
@@ -770,7 +770,7 @@ namespace fx_system
 
 				if (!anyNonZero)
 				{
-					anyNonZero = velState->totalDelta.amplitude[0] * velState->totalDelta.amplitude[0] + velState->totalDelta.amplitude[1] * velState->totalDelta.amplitude[1] + velState->totalDelta.amplitude[2] * velState->totalDelta.amplitude[2] > velEpsilonSq * 0.000001f; // Vec3LengthSq(velState->totalDelta.amplitude) > velEpsilonSq * 0.000001f;
+					anyNonZero = Vec3LengthSq(velState->totalDelta.amplitude) > velEpsilonSq * 0.000001f;
 				}
 			}
 			else
@@ -805,6 +805,163 @@ namespace fx_system
 
 		FX_SampleVelocityInFrame(&elemDef->velSamples->local, 2, edElemDef, elemDef, velScale, FX_ELEM_HAS_VELOCITY_GRAPH_LOCAL);
 		FX_SampleVelocityInFrame(&elemDef->velSamples->world, 2, edElemDef, elemDef, velScale, FX_ELEM_HAS_VELOCITY_GRAPH_WORLD);
+	}
+
+	void FX_SampleVisualStateScalar(FxSampleChannel routing, float* amplitude, float* base, FxEditorElemDef* edElemDef, float sampleTime, float scaleFactor)
+	{
+		switch (routing)
+		{
+		case FX_CHAN_SIZE_0:
+			*base = FX_SampleCurve1D(edElemDef->sizeShape[0][0], edElemDef->sizeScale[0] * scaleFactor, sampleTime);
+
+			if ((edElemDef->editorFlags & FX_ED_FLAG_USE_RANDOM_SIZE_0) != 0)
+			{
+				*amplitude = FX_SampleCurve1D(edElemDef->sizeShape[0][1], edElemDef->sizeScale[0] * scaleFactor, sampleTime) - *base;
+				return;
+			}
+
+			*amplitude = 0.0;
+			return;
+
+
+		case FX_CHAN_SIZE_1:
+			*base = FX_SampleCurve1D(edElemDef->sizeShape[1][0], edElemDef->sizeScale[1] * scaleFactor, sampleTime);
+
+			if ((edElemDef->editorFlags & FX_ED_FLAG_USE_RANDOM_SIZE_1) != 0)
+			{
+				*amplitude = FX_SampleCurve1D(edElemDef->sizeShape[1][1], edElemDef->sizeScale[1] * scaleFactor, sampleTime) - *base;
+				return;
+			}
+
+			*amplitude = 0.0;
+			return;
+
+
+		case FX_CHAN_SCALE:
+			*base = FX_SampleCurve1D(edElemDef->scaleShape[0], edElemDef->scaleScale * scaleFactor, sampleTime);
+
+			if ((edElemDef->editorFlags & FX_ED_FLAG_USE_RANDOM_SCALE) != 0)
+			{
+				*amplitude = FX_SampleCurve1D(edElemDef->scaleShape[1], edElemDef->scaleScale * scaleFactor, sampleTime) - *base;
+				return;
+			}
+
+			*amplitude = 0.0;
+			return;
+		}
+
+		if (routing != FX_CHAN_NONE)
+		{
+			Assert();
+		}
+
+		*base = 0.0;
+		*amplitude = 0.0;
+	}
+
+	void FX_SampleVisualState(FxElemDef* elemDef, FxEditorElemDef* edElemDef)
+	{
+		FxSampleChannel routing[5];
+		FX_GetVisualSampleRouting(edElemDef, routing);
+
+		const float rotationScale = (edElemDef->rotationScale * 0.017453292f) / (static_cast<float>( static_cast<std::uint8_t>(elemDef->visStateIntervalCount) ) * 1000.0f);
+		const int secondColorSrc = (edElemDef->editorFlags & FX_ED_FLAG_USE_RANDOM_COLOR) != 0;
+		const int secondAlphaSrc = (edElemDef->editorFlags & FX_ED_FLAG_USE_RANDOM_ALPHA) != 0;
+
+		for (int sampleIndex = 0; sampleIndex <= static_cast<std::uint8_t>(elemDef->visStateIntervalCount); ++sampleIndex)
+		{
+			const float sampleTime = static_cast<float>(sampleIndex) / static_cast<float>( static_cast<std::uint8_t>(elemDef->visStateIntervalCount) );
+			FxElemVisStateSample* visStateRange = &elemDef->visSamples[sampleIndex];
+
+			if (routing[0])
+			{
+				if (routing[0] != FX_CHAN_NONE)
+				{
+					Assert();
+				}
+
+				*(DWORD*)visStateRange->base.color = -1;
+				*(DWORD*)visStateRange->amplitude.color = -1;
+			}
+			else
+			{
+				float rgba[4];
+
+				FX_SampleCurve3D(edElemDef->color[0], rgba, 1.0, sampleTime);
+				rgba[3] = FX_SampleCurve1D(edElemDef->alpha[0], 1.0, sampleTime);
+
+				if ((edElemDef->editorFlags & FX_ED_FLAG_MODULATE_COLOR_BY_ALPHA) != 0)
+				{
+					rgba[0] = rgba[3] * rgba[0];
+					rgba[1] = rgba[3] * rgba[1];
+					rgba[2] = rgba[3] * rgba[2];
+					rgba[3] = 1.0f;
+				}
+
+				Byte4PackVertexColor(rgba, visStateRange->base.color);
+
+				FX_SampleCurve3D(edElemDef->color[secondColorSrc], rgba, 1.0f, sampleTime);
+				rgba[3] = FX_SampleCurve1D(edElemDef->alpha[secondAlphaSrc], 1.0f, sampleTime);
+
+				if ((edElemDef->editorFlags & FX_ED_FLAG_MODULATE_COLOR_BY_ALPHA) != 0)
+				{
+					rgba[0] = rgba[3] * rgba[0];
+					rgba[1] = rgba[3] * rgba[1];
+					rgba[2] = rgba[3] * rgba[2];
+					rgba[3] = 1.0f;
+				}
+				Byte4PackVertexColor(rgba, visStateRange->amplitude.color);
+			}
+			if (routing[4] == FX_CHAN_ROTATION)
+			{
+				visStateRange->base.rotationDelta = FX_SampleCurve1D(edElemDef->rotationShape[0], rotationScale, sampleTime);;
+
+
+				if (sampleIndex)
+				{
+					visStateRange->base.rotationTotal = (visStateRange[-1].base.rotationDelta + visStateRange->base.rotationDelta) * 0.5f + visStateRange[-1].base.rotationTotal;
+				}
+				else
+				{
+					visStateRange->base.rotationTotal = 0.0f;
+				}
+
+				if ((edElemDef->editorFlags & FX_ED_FLAG_USE_RANDOM_ROTATION_DELTA) != 0)
+				{
+					visStateRange->amplitude.rotationDelta = FX_SampleCurve1D(edElemDef->rotationShape[1], rotationScale, sampleTime) - visStateRange->base.rotationDelta;
+
+					if (sampleIndex)
+					{
+						visStateRange->amplitude.rotationTotal = (visStateRange[-1].amplitude.rotationDelta + visStateRange->amplitude.rotationDelta) * 0.5f + visStateRange[-1].amplitude.rotationTotal;
+					}
+					else
+					{
+						visStateRange->amplitude.rotationTotal = 0.0f;
+					}
+				}
+				else
+				{
+					visStateRange->amplitude.rotationDelta = 0.0f;
+					visStateRange->amplitude.rotationTotal = 0.0f;
+				}
+			}
+			else
+			{
+				if (routing[4] != FX_CHAN_NONE)
+				{
+					Assert();
+				}
+
+				visStateRange->base.rotationDelta = 0.0f;
+				visStateRange->base.rotationTotal = 0.0f;
+				visStateRange->amplitude.rotationDelta = 0.0f;
+				visStateRange->amplitude.rotationTotal = 0.0f;
+			}
+
+			FX_SampleVisualStateScalar(routing[1], visStateRange->amplitude.size, visStateRange->base.size, edElemDef, sampleTime, 0.5f);
+			FX_SampleVisualStateScalar(routing[2], &visStateRange->amplitude.size[1], &visStateRange->base.size[1], edElemDef, sampleTime, 0.5f);
+			FX_SampleVisualStateScalar(routing[3], &visStateRange->amplitude.scale, &visStateRange->base.scale, edElemDef, sampleTime, 1.0f);
+		}
 	}
 
 	void FX_BoundFloatRange(FxFloatRange* range, float lower, float upper)
@@ -1260,12 +1417,8 @@ namespace fx_system
 		}
 		
 		FX_ReserveElemDefMemory(elemDef, memPool);
-
-
-		
 		FX_SampleVelocity(edElemDef, elemDef);
 
-		// #UNFINISHED
 		// FxEditorElemDef *edElemDef@<eax>, FxElemDef *elemDef@<esi>
 		/*const static uint32_t FX_SampleVelocity = 0x47DB50;
 		__asm
@@ -1281,9 +1434,7 @@ namespace fx_system
 
 		if (visStateCount)
 		{
-			// #UNFINISHED
-			//FX_SampleVisualState(elemDef, edElemDef);
-			utils::hook::call<void(__cdecl)(FxElemDef*, FxEditorElemDef*)>(0x47DDA0)(elemDef, edElemDef);
+			FX_SampleVisualState(elemDef, edElemDef); //utils::hook::call<void(__cdecl)(FxElemDef*, FxEditorElemDef*)>(0x47DDA0)(elemDef, edElemDef);
 		}
 
 		if (elemDef->elemType == FX_ELEM_TYPE_DECAL)
