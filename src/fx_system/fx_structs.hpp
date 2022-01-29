@@ -825,4 +825,11 @@ namespace fx_system
 		volatile int* spawnLock;
 	};
 
+	struct $145C5CACE7A579404A9D7C1B73F29F79
+	{
+		int effectDefCount;
+		FxEffectDef* effectDefs[512];
+		FxEffectDef* defaultEffect;
+	};
+
 }

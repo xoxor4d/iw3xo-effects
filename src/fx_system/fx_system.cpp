@@ -7,7 +7,7 @@ namespace fx_system
 {
 	FxSystem fx_systemPool = {};
 
-	// *
+	// * --------------------------------
 
 	FxSystem* FX_GetSystem([[maybe_unused]] int localClientNum)
 	{

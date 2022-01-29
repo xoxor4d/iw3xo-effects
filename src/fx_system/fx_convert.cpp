@@ -1554,7 +1554,7 @@ namespace fx_system
 		return elemCount;
 	}
 
-	FxEffectDef* FX_Convert(FxEditorEffectDef* editorEffect, void* (__cdecl* Alloc)(int))
+	FxEffectDef* FX_Convert(FxEditorEffectDef* editorEffect, void* (__cdecl* Alloc)(size_t))
 	{
 		if (!editorEffect)
 		{

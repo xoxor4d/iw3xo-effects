@@ -33,4 +33,7 @@ namespace game
 
 	static utils::function<game::dvar_s* (const char* name)> Dvar_FindVar = 0x43DE60;
 
+	static utils::function<int (const char*, const char*)> I_stricmp = 0x443290;
+	static utils::function<int(const char*, const char*)> I_strcmp = 0x4432F0;
+
 }

@@ -427,7 +427,7 @@ namespace fx_system
 			return 0;
 		}
 
-		return pack;
+		return static_cast<char>(pack);
 	}
 
 	void Byte4PackVertexColor(const float* from, char* to)
