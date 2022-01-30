@@ -880,8 +880,11 @@ namespace fx_system
 					Assert();
 				}
 
-				*(DWORD*)visStateRange->base.color = -1;
-				*(DWORD*)visStateRange->amplitude.color = -1;
+				memset(&visStateRange->base.color, -1, 4);
+				memset(&visStateRange->amplitude.color, -1, 4);
+
+				//*(DWORD*)visStateRange->base.color = -1;
+				//*(DWORD*)visStateRange->amplitude.color = -1;
 			}
 			else
 			{

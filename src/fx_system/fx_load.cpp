@@ -6,6 +6,12 @@
 #define AssertS(str)	if(IsDebuggerPresent()) __debugbreak();	else {	\
 					game::Com_Error("%s\nLine %d :: %s\n%s ", str, __LINE__, __func__, __FILE__); }
 
+// #ENV_DEPENDENT
+#define Warning(unused, fmt, ...)	if(IsDebuggerPresent()) __debugbreak();	else {\
+									game::allow_warnings = true; \
+									game::Com_PrintError(unused, fmt, __VA_ARGS__); \
+									game::allow_warnings = false; }
+
 namespace fx_system
 {
 	$145C5CACE7A579404A9D7C1B73F29F79 fx_load = {};
@@ -126,7 +132,7 @@ namespace fx_system
 		return visuals->anonymous != nullptr;
 	}
 
-	bool FX_RegisterAsset_SoundAliasName(const char* name, FxElemVisuals* visuals)
+	bool FX_RegisterAsset_SoundAliasName([[maybe_unused]] const char* name, [[maybe_unused]] FxElemVisuals* visuals)
 	{
 		// #UNFINISHED
 		Assert();
@@ -224,7 +230,7 @@ namespace fx_system
 		
 		const int	keySize = dimensionCount + 1;
 		const bool	dims = keyArray[(dimensionCount + 1) * (keyCount - 1)] != 1.0f;
-		const int	createdKeyCount = dims + keyCount + keyArray[0] != 0.0f;
+		const int	createdKeyCount = dims + keyCount + (keyArray[0] != 0.0f);
 
 		if (createdKeyCount < 2)
 		{
@@ -237,6 +243,7 @@ namespace fx_system
 			Assert();
 		}
 
+		newCurve->refCount = 1;
 		newCurve->dimensionCount = dimensionCount;
 		int keyIndex = 0;
 
@@ -679,7 +686,7 @@ namespace fx_system
 
 	bool FX_ParseVelGraph0X(const char** parse, FxEditorElemDef* edElemDef)
 	{
-		return FX_ParseGraphRange(parse, 1, -0.5f, 0.5f, (float*)edElemDef->velScale, (FxCurve**)edElemDef->velShape);
+		return FX_ParseGraphRange(parse, 1, -0.5f, 0.5f, &edElemDef->velScale[0][0], edElemDef->velShape[0][0]);
 	}
 
 	bool FX_ParseVelGraph0Y(const char** parse, FxEditorElemDef* edElemDef)
@@ -871,7 +878,7 @@ namespace fx_system
 				return false;
 			}
 
-			edElemDef->trailDef.inds[edElemDef->trailDef.indCount] = index;
+			edElemDef->trailDef.inds[edElemDef->trailDef.indCount] = static_cast<std::uint16_t>(index);
 			if (index != edElemDef->trailDef.inds[edElemDef->trailDef.indCount])
 			{
 				Assert();
@@ -915,12 +922,12 @@ namespace fx_system
 		return FX_ParseAssetArray_FxElemVisuals_32_(parse, FX_ELEM_TYPE_MODEL, edElemDef, (FxElemVisuals(*)[32])&edElemDef->u, (bool(__cdecl*)(const char*, FxElemVisuals*))FX_RegisterAsset_Model);
 	}
 
-	bool FX_ParseLight(const char** parse, FxEditorElemDef* edElemDef)
+	bool FX_ParseLight([[maybe_unused]] const char** parse, FxEditorElemDef* edElemDef)
 	{
 		return FX_SetEditorElemType(edElemDef, FX_ELEM_TYPE_OMNI_LIGHT);
 	}
 
-	bool FX_ParseSpotLight(const char** parse, FxEditorElemDef* edElemDef)
+	bool FX_ParseSpotLight([[maybe_unused]] const char** parse, FxEditorElemDef* edElemDef)
 	{
 		return FX_SetEditorElemType(edElemDef, FX_ELEM_TYPE_SPOT_LIGHT);
 	}
@@ -1145,14 +1152,169 @@ namespace fx_system
 		return effectDef;
 	}
 
+	bool FX_ParseEditorElemField(const char** parse, FxEditorElemDef* edElemDef, const char* token)
+	{
+		for (unsigned int fieldIndex = 0; fieldIndex < 69; ++fieldIndex)
+		{
+			if (!strcmp(token, s_elemFields[fieldIndex].keyName))
+			{
+				bool result = false;
+				if (s_elemFields[fieldIndex].handler(parse, edElemDef))
+				{
+					result = game::Com_MatchToken(parse, ";", 1) != 0;
+				}
+				
+				return result;
+			}
+		}
+
+		Warning(0, "unkown field '%s'\n", token);
+		return false;
+	}
+
+	bool FX_ParseEditorElem(int version, const char** parse, FxEditorElemDef* edElemDef)
+	{
+		memset(edElemDef->name, 0, sizeof(FxEditorElemDef));
+
+		if (edElemDef->flags || edElemDef->editorFlags || edElemDef->atlas.behavior || edElemDef->lightingFrac != 0.0f)
+		{
+			Assert();
+		}
+
+		if (version < 2)
+		{
+			edElemDef->editorFlags = FX_ED_FLAG_BACKCOMPAT_VELOCITY;
+		}
+
+		edElemDef->elemType = FX_ELEM_TYPE_COUNT;
+		edElemDef->sortOrder = 5;
+		
+		while (true)
+		{
+			char* token = game::Com_Parse(parse);
+			if (*token == '}')
+			{
+				break;
+			}
+
+			if (!FX_ParseEditorElemField(parse, edElemDef, token))
+			{
+				return false;
+			}
+		}
+
+		if (edElemDef->elemType != FX_ELEM_TYPE_COUNT)
+		{
+			return true;
+		}
+
+		Warning(0, "no visual type specified\n");
+		return false;
+	}
+
+	bool FX_ParseEditorEffect(const char** parse, FxEditorEffectDef* edEffectDef)
+	{
+		bool result;
+		char* token;
+
+		int version = Com_ParseInt(parse);
+		if (version <= 2)
+		{
+			edEffectDef->elemCount = 0;
+			token = game::Com_Parse(parse);
+
+			while (*parse)
+			{
+				if (*token != '{')
+				{
+					Warning(0, "Expected '{' to start a new segment, found '%s' instead.\n", token);
+					return false;
+				}
+
+				if (edEffectDef->elemCount == 32)
+				{
+					Warning(0, "Cannot have more than %i segments.\n", edEffectDef->elemCount);
+					return false;
+				}
+
+				if (!FX_ParseEditorElem(version, parse, &edEffectDef->elems[edEffectDef->elemCount]))
+				{
+					return false;
+				}
+
+				++edEffectDef->elemCount;
+				token = game::Com_Parse(parse);
+			}
+
+			result = true;
+		}
+		else
+		{
+			Warning(0, "Version %i is too high. I can only handle up to %i.\n", version, 2);
+			result = false;
+		}
+
+		return result;
+	}
+
+	bool FX_LoadEditorEffectFromBuffer(const char* buffer, const char* parseSessionName, FxEditorEffectDef* edEffectDef)
+	{
+		bool result = false;
+
+		game::Com_BeginParseSession(parseSessionName);
+		game::Com_SetSpaceDelimited(0);
+		game::Com_SetParseNegativeNumbers(1);
+
+		const char* parse = buffer;
+		const char* token = game::Com_Parse(&parse);
+
+		if (game::I_stricmp(token, "iwfx"))
+		{
+			AssertS("Effect needs to be updated from the legacy format.\n");
+		}
+		else
+		{
+			result = FX_ParseEditorEffect(&parse, edEffectDef);
+		}
+
+		game::Com_EndParseSession();
+		return result;
+	}
+
+	bool FX_LoadEditorEffect(const char* name, FxEditorEffectDef* edEffectDef)
+	{
+		if (!name || !edEffectDef)
+		{
+			Assert();
+		}
+
+		char filename[64];
+		sprintf_s(filename, 64, "fx/%s.efx", name);
+
+		void* fileData;
+		const int fileSize = game::FS_ReadFile(filename, &fileData);
+		if (fileSize >= 0)
+		{
+			strcpy(edEffectDef->name, name);
+
+			const bool result = FX_LoadEditorEffectFromBuffer((const char*)fileData, filename, edEffectDef);
+			game::FS_FreeFile(fileData);
+
+			return result;
+		}
+
+		Warning(21, "ERROR: effect '%s' not found\n", filename);
+		return false;
+	}
+
 	FxEffectDef* FX_Load(const char* name)
 	{
 		auto* editorEffect = new FxEditorEffectDef();
 
 		strcpy(editorEffect->name, name);
 		
-		//if (FX_LoadEditorEffect(name, editorEffect))
-		if (utils::hook::call<bool(__cdecl)(const char*, FxEditorEffectDef*)>(0x477030)(name, editorEffect))
+		if (FX_LoadEditorEffect(name, editorEffect))
+		//if (utils::hook::call<bool(__cdecl)(const char*, FxEditorEffectDef*)>(0x477030)(name, editorEffect))
 		{
 			FxEffectDef* effectDef = FX_Convert(editorEffect, FX_AllocMem);
 			delete editorEffect;

@@ -73,7 +73,7 @@ namespace fx_system
 			Assert();
 		}
 		
-		if (source->currentKeyIndex >= static_cast<std::uint32_t>(source->master->keyCount))
+		if (static_cast<std::uint32_t>(source->currentKeyIndex) >= static_cast<std::uint32_t>(source->master->keyCount))
 		{
 			Assert();
 		}
@@ -98,7 +98,7 @@ namespace fx_system
 			Assert();
 		}
 
-		if (source->currentKeyIndex >= (unsigned int)source->master->keyCount)
+		if (static_cast<std::uint32_t>(source->currentKeyIndex) >= static_cast<std::uint32_t>(source->master->keyCount))
 		{
 			Assert();
 		}
@@ -142,7 +142,7 @@ namespace fx_system
 	float FxCurveIterator_SampleTime(FxCurveIterator* source, float time)
 	{
 		FxCurveIterator_MoveToTime(source, time);
-		if (source->currentKeyIndex >= static_cast<std::uint32_t>(source->master->keyCount - 1))
+		if (static_cast<std::uint32_t>(source->currentKeyIndex) >= static_cast<std::uint32_t>(source->master->keyCount - 1))
 		{
 			Assert();
 		}
@@ -159,7 +159,7 @@ namespace fx_system
 
 		FxCurveIterator_MoveToTime(source, time);
 
-		if (source->currentKeyIndex >= static_cast<std::uint32_t>(source->master->keyCount - 1))
+		if (static_cast<std::uint32_t>(source->currentKeyIndex) >= static_cast<std::uint32_t>(source->master->keyCount - 1))
 		{
 			Assert();
 		}

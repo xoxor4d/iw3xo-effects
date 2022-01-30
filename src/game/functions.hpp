@@ -41,6 +41,14 @@ namespace game
 	static utils::function<int (const char*, const char*)> I_strcmp = 0x4432F0;
 	static utils::function<void (const char*, const char*, int)> I_strncpyz = 0x443070;
 
+	static utils::function<unsigned int (const char*, void**)> FS_ReadFile = 0x42DF20;
+	static utils::function<void (void*)> FS_FreeFile = 0x42DFD0;
+
+	static utils::function<void (const char*)> Com_BeginParseSession = 0x441970;
+	static utils::function<void ()> Com_EndParseSession = 0x441A10;
+	static utils::function<void (int)> Com_SetSpaceDelimited = 0x441A50;
+	static utils::function<void (int)> Com_SetParseNegativeNumbers = 0x441AE0;
+
 	static utils::function<char* (const char**)> Com_Parse = 0x442500;
 	static utils::function<int (const char**, const char*, int)> Com_MatchToken = 0x4425B0;
 	static utils::function<void ()> Com_UngetToken = 0x441DB0;
