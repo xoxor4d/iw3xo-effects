@@ -33,7 +33,15 @@ namespace game
 
 	static utils::function<game::dvar_s* (const char* name)> Dvar_FindVar = 0x43DE60;
 
-	static utils::function<int (const char*, const char*)> I_stricmp = 0x443290;
-	static utils::function<int(const char*, const char*)> I_strcmp = 0x4432F0;
 
+	static utils::function<Material* (const char*, int)> Material_RegisterHandle = 0x48FFD0;
+	static utils::function<XModel* (const char*)> R_RegisterModel = 0x4AC7F0;
+
+	static utils::function<int (const char*, const char*)> I_stricmp = 0x443290;
+	static utils::function<int (const char*, const char*)> I_strcmp = 0x4432F0;
+	static utils::function<void (const char*, const char*, int)> I_strncpyz = 0x443070;
+
+	static utils::function<char* (const char**)> Com_Parse = 0x442500;
+	static utils::function<int (const char**, const char*, int)> Com_MatchToken = 0x4425B0;
+	static utils::function<void ()> Com_UngetToken = 0x441DB0;
 }

@@ -5,6 +5,16 @@
 
 namespace fx_system
 {
+	float Com_ParseFloat(const char** buf_p)
+	{
+		return static_cast<float>(atof(game::Com_Parse(buf_p)));
+	}
+
+	int Com_ParseInt(const char** buf_p)
+	{
+		return atoi(game::Com_Parse(buf_p));
+	}
+
 	game::Material* Material_FromHandle(game::Material* handle)
 	{
 		if (!handle || !handle->info.name || !*handle->info.name)

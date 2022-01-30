@@ -832,4 +832,24 @@ namespace fx_system
 		FxEffectDef* defaultEffect;
 	};
 
+	struct FxFlagOutputSet
+	{
+		int* flags[3];
+	};
+
+	struct FxFlagDef
+	{
+		const char* name;
+		int flagType;
+		unsigned int mask;
+		unsigned int value;
+	};
+
+	struct FxElemField
+	{
+		const char* keyName;
+		bool(__cdecl* handler)(const char**, FxEditorElemDef*);
+	};
+
+
 }
