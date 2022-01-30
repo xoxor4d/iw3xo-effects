@@ -656,18 +656,18 @@ namespace fx_system
 			useVelocity[0] && (edElemDef->editorFlags & FX_ED_FLAG_USE_RANDOM_VELOCITY_0) != 0,
 			useVelocity[1] && (edElemDef->editorFlags & FX_ED_FLAG_USE_RANDOM_VELOCITY_1) != 0
 		};
-		
+
 		const bool brokenCompatibilityMode = (edElemDef->editorFlags & FX_ED_FLAG_BACKCOMPAT_VELOCITY) != 0;
 		float velEpsilonSq = 0.0f;
 
 		if (useVelocity[0])
 		{
-			velEpsilonSq = Vec3LengthSq(velScale[0]);
+			velEpsilonSq = Vec3LengthSq(&(*velScale)[0]);
 		}
 
 		if (useVelocity[1])
 		{
-			velEpsilonSq = Vec3LengthSq(velScale[3]) + velEpsilonSq;
+			velEpsilonSq = Vec3LengthSq(&(*velScale)[3]) + velEpsilonSq;
 		}
 
 		bool anyNonZero = false;

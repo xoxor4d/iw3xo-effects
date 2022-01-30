@@ -935,77 +935,77 @@ namespace fx_system
 		return FX_ParseAssetArray_FxElemVisuals_32_(parse, FX_ELEM_TYPE_SOUND, edElemDef, (FxElemVisuals(*)[32])&edElemDef->u, (bool(__cdecl*)(const char*, FxElemVisuals*))FX_RegisterAsset_SoundAliasName);
 	}
 
-	FxElemField s_elemFields[69] =
+	const FxElemField s_elemFields[69] =
 	{
-		"name", FX_ParseName,
-		"editorFlags", FX_ParseNonAtlasFlags,
-		"flags", FX_ParseNonAtlasFlags,
-		"spawnRange",  FX_ParseSpawnRange,
-		"fadeInRange",  FX_ParseFadeInRange,
-		"fadeOutRange",  FX_ParseFadeOutRange,
-		"spawnFrustumCullRadius",  FX_ParseSpawnFrustumCullRadius,
-		"spawnLooping",  FX_ParseSpawnDefLooping,
-		"spawnOneShot",  FX_ParseSpawnDefOneShot,
-		"spawnDelayMsec",  FX_ParseSpawnDelayMsec,
-		"lifeSpanMsec",  FX_ParseLifeSpanMsec,
-		"spawnOrgX",  FX_ParseSpawnOrgX,
-		"spawnOrgY",  FX_ParseSpawnOrgY,
-		"spawnOrgZ",  FX_ParseSpawnOrgZ,
-		"spawnOffsetRadius",  FX_ParseSpawnOffsetRadius,
-		"spawnOffsetHeight",  FX_ParseSpawnOffsetHeight,
-		"spawnAnglePitch",  FX_ParseSpawnAnglePitch,
-		"spawnAngleYaw",  FX_ParseSpawnAngleYaw,
-		"spawnAngleRoll",  FX_ParseSpawnAngleRoll,
-		"angleVelPitch",  FX_ParseAngleVelPitch,
-		"angleVelYaw",  FX_ParseAngleVelYaw,
-		"angleVelRoll",  FX_ParseAngleVelRoll,
-		"initialRot",  FX_ParseInitialRot,
-		"gravity",  FX_ParseGravity,
-		"elasticity",  FX_ParseElasticity,
-		"atlasBehavior",  FX_ParseAtlasBehavior,
-		"atlasIndex",  FX_ParseAtlasIndex,
-		"atlasFps",  FX_ParseAtlasFps,
-		"atlasLoopCount",  FX_ParseAtlasLoopCount,
-		"atlasColIndexBits",  FX_ParseAtlasColIndexBits,
-		"atlasRowIndexBits",  FX_ParseAtlasRowIndexBits,
-		"atlasEntryCount",  FX_ParseAtlasEntryCount,
-		"velGraph0X",  FX_ParseVelGraph0X,
-		"velGraph0Y",  FX_ParseVelGraph0Y,
-		"velGraph0Z",  FX_ParseVelGraph0Z,
-		"velGraph1X",  FX_ParseVelGraph1X,
-		"velGraph1Y",  FX_ParseVelGraph1Y,
-		"velGraph1Z",  FX_ParseVelGraph1Z,
-		"rotGraph",  FX_ParseRotGraph,
-		"sizeGraph0",  FX_ParseSizeGraph0,
-		"sizeGraph1",  FX_ParseSizeGraph1,
-		"scaleGraph",  FX_ParseScaleGraph,
-		"colorGraph",  FX_ParseColorGraph,
-		"alphaGraph",  FX_ParseAlphaGraph,
-		"lightingFrac",  FX_ParseLightingFrac,
-		"collOffset",  FX_ParseCollOffset,
-		"collRadius",  FX_ParseCollRadius,
-		"fxOnImpact",  FX_ParseFxOnImpact,
-		"fxOnDeath",  FX_ParseFxOnDeath,
-		"sortOrder",  FX_ParseSortOrder,
-		"emission",  FX_ParseEmission,
-		"emitDist",  FX_ParseEmitDist,
-		"emitDistVariance",  FX_ParseEmitDistVariance,
-		"trailRepeatTime",  FX_ParseTrailRepeatTime,
-		"trailSplitDist",  FX_ParseTrailSplitDist,
-		"trailScrollTime",  FX_ParseTrailScrollTime,
-		"trailRepeatDist",  FX_ParseTrailRepeatDist,
-		"trailDef",  FX_ParseTrailDef,
-		"billboardSprite",  FX_ParseBillboardSprite,
-		"orientedSprite",  FX_ParseOrientedSprite,
-		"cloud",  FX_ParseCloud,
-		"tail",  FX_ParseTail,
-		"trail",  FX_ParseTrail,
-		"decal",  FX_ParseDecal,
-		"model",  FX_ParseModel,
-		"light",  FX_ParseLight,
-		"spotLight",  FX_ParseSpotLight,
-		"runner",  FX_ParseRunner,
-		"sound",  FX_ParseSound
+		{ "name", FX_ParseName },
+		{ "editorFlags", FX_ParseNonAtlasFlags },
+		{ "flags", FX_ParseNonAtlasFlags },
+		{ "spawnRange",  FX_ParseSpawnRange },
+		{ "fadeInRange",  FX_ParseFadeInRange },
+		{ "fadeOutRange",  FX_ParseFadeOutRange },
+		{ "spawnFrustumCullRadius",  FX_ParseSpawnFrustumCullRadius },
+		{ "spawnLooping",  FX_ParseSpawnDefLooping },
+		{ "spawnOneShot",  FX_ParseSpawnDefOneShot },
+		{ "spawnDelayMsec",  FX_ParseSpawnDelayMsec },
+		{ "lifeSpanMsec",  FX_ParseLifeSpanMsec },
+		{ "spawnOrgX",  FX_ParseSpawnOrgX },
+		{ "spawnOrgY",  FX_ParseSpawnOrgY },
+		{ "spawnOrgZ",  FX_ParseSpawnOrgZ },
+		{ "spawnOffsetRadius",  FX_ParseSpawnOffsetRadius },
+		{ "spawnOffsetHeight",  FX_ParseSpawnOffsetHeight },
+		{ "spawnAnglePitch",  FX_ParseSpawnAnglePitch },
+		{ "spawnAngleYaw",  FX_ParseSpawnAngleYaw },
+		{ "spawnAngleRoll",  FX_ParseSpawnAngleRoll },
+		{ "angleVelPitch",  FX_ParseAngleVelPitch },
+		{ "angleVelYaw",  FX_ParseAngleVelYaw },
+		{ "angleVelRoll",  FX_ParseAngleVelRoll },
+		{ "initialRot",  FX_ParseInitialRot },
+		{ "gravity",  FX_ParseGravity },
+		{ "elasticity",  FX_ParseElasticity },
+		{ "atlasBehavior",  FX_ParseAtlasBehavior },
+		{ "atlasIndex",  FX_ParseAtlasIndex },
+		{ "atlasFps",  FX_ParseAtlasFps },
+		{ "atlasLoopCount",  FX_ParseAtlasLoopCount },
+		{ "atlasColIndexBits",  FX_ParseAtlasColIndexBits },
+		{ "atlasRowIndexBits",  FX_ParseAtlasRowIndexBits },
+		{ "atlasEntryCount",  FX_ParseAtlasEntryCount },
+		{ "velGraph0X",  FX_ParseVelGraph0X },
+		{ "velGraph0Y",  FX_ParseVelGraph0Y },
+		{ "velGraph0Z",  FX_ParseVelGraph0Z },
+		{ "velGraph1X",  FX_ParseVelGraph1X },
+		{ "velGraph1Y",  FX_ParseVelGraph1Y },
+		{ "velGraph1Z",  FX_ParseVelGraph1Z },
+		{ "rotGraph",  FX_ParseRotGraph },
+		{ "sizeGraph0",  FX_ParseSizeGraph0 },
+		{ "sizeGraph1",  FX_ParseSizeGraph1 },
+		{ "scaleGraph",  FX_ParseScaleGraph },
+		{ "colorGraph",  FX_ParseColorGraph },
+		{ "alphaGraph",  FX_ParseAlphaGraph },
+		{ "lightingFrac",  FX_ParseLightingFrac },
+		{ "collOffset",  FX_ParseCollOffset },
+		{ "collRadius",  FX_ParseCollRadius },
+		{ "fxOnImpact",  FX_ParseFxOnImpact },
+		{ "fxOnDeath",  FX_ParseFxOnDeath },
+		{ "sortOrder",  FX_ParseSortOrder },
+		{ "emission",  FX_ParseEmission },
+		{ "emitDist",  FX_ParseEmitDist },
+		{ "emitDistVariance",  FX_ParseEmitDistVariance },
+		{ "trailRepeatTime",  FX_ParseTrailRepeatTime },
+		{ "trailSplitDist",  FX_ParseTrailSplitDist },
+		{ "trailScrollTime",  FX_ParseTrailScrollTime },
+		{ "trailRepeatDist",  FX_ParseTrailRepeatDist },
+		{ "trailDef",  FX_ParseTrailDef },
+		{ "billboardSprite",  FX_ParseBillboardSprite },
+		{ "orientedSprite",  FX_ParseOrientedSprite },
+		{ "cloud",  FX_ParseCloud },
+		{ "tail",  FX_ParseTail },
+		{ "trail",  FX_ParseTrail },
+		{ "decal",  FX_ParseDecal },
+		{ "model",  FX_ParseModel },
+		{ "light",  FX_ParseLight },
+		{ "spotLight",  FX_ParseSpotLight },
+		{ "runner",  FX_ParseRunner },
+		{ "sound",  FX_ParseSound }
 	};
 
 	// * --------------------------------
@@ -1147,20 +1147,27 @@ namespace fx_system
 
 	FxEffectDef* FX_Load(const char* name)
 	{
-		FxEffectDef* effectDef = nullptr;
-		FxEditorEffectDef editorEffect = {};
+		auto* editorEffect = new FxEditorEffectDef();
 
-		strcpy(editorEffect.name, name);
-		;
+		strcpy(editorEffect->name, name);
 		
-		//if (!FX_LoadEditorEffect(name, &editorEffect) || (effectDef = FX_Convert(&editorEffect, FX_AllocMem)) == nullptr)
-		if (!utils::hook::call<bool(__cdecl)(const char*, FxEditorEffectDef*)>(0x477030)(name, &editorEffect) 
-			|| (effectDef = FX_Convert(&editorEffect, FX_AllocMem)) == nullptr)
+		//if (FX_LoadEditorEffect(name, editorEffect))
+		if (utils::hook::call<bool(__cdecl)(const char*, FxEditorEffectDef*)>(0x477030)(name, editorEffect))
 		{
-			effectDef = (FxEffectDef*)FX_LoadFailed(name);
+			FxEffectDef* effectDef = FX_Convert(editorEffect, FX_AllocMem);
+			delete editorEffect;
+
+			if(effectDef)
+			{
+				return effectDef;
+			}
+		}
+		else
+		{
+			delete editorEffect;
 		}
 
-		return effectDef;
+		return FX_LoadFailed(name);
 	}
 
 }

@@ -79,7 +79,7 @@ namespace fx_system
 		}
 
 		const int keySize = source->master->dimensionCount + 1;
-		float* key = &source->master->keys[keySize * source->currentKeyIndex]; // TODO
+		float* key = &source->master->keys[keySize * source->currentKeyIndex];
 
 		if (*key > time)
 		{
