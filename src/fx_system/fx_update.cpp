@@ -5,6 +5,12 @@
 
 namespace fx_system
 {
+	void FX_FillUpdateCmd(int localClientNum, FxCmd* cmd)
+	{
+		cmd->localClientNum = localClientNum;
+		cmd->system = FX_GetSystem(localClientNum);
+	}
+
 	// checked
 	FxElemDef* FX_GetUpdateElemDef(FxUpdateElem* update)
 	{

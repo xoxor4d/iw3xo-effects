@@ -3,6 +3,8 @@
 
 namespace fx_system
 {
+	void				FX_FillUpdateCmd(int localClientNum, FxCmd* cmd);
+
 	FxElemDef*			FX_GetUpdateElemDef(FxUpdateElem* update);
 	float				FX_GetAtRestFraction(FxUpdateElem* update, float msec);
 

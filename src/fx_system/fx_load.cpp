@@ -18,7 +18,7 @@ namespace fx_system
 
 	const FxFlagDef s_allFlagDefs[] =
 	{
-		{"looping", 0, 1, 1 },
+		{ "looping", 0, 1, 1 },
 		{ "useRandColor", 0, 2, 2 },
 		{ "useRandAlpha", 0, 4, 4 },
 		{ "useRandSize0", 0, 8, 8 },

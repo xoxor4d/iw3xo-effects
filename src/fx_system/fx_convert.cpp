@@ -100,7 +100,7 @@ namespace fx_system
 
 	bool FX_ValidateColor(FxEditorEffectDef* editorEffect, FxEditorElemDef* edElemDef)
 	{
-		if (edElemDef->elemType == 9)
+		if (edElemDef->elemType == FX_ELEM_TYPE_DECAL)
 		{
 			if (edElemDef->lightingFrac != 0.0f)
 			{
@@ -116,7 +116,7 @@ namespace fx_system
 				return false;
 			}
 
-			if (edElemDef->lightingFrac > 1.0)
+			if (edElemDef->lightingFrac > 1.0f)
 			{
 				Warning(21, "effect '%s' segment '%s'\nLighting fraction larger than 1.0.\n", editorEffect->name, edElemDef->name);
 				return false;
