@@ -151,7 +151,7 @@ namespace fx_system
 				// R_AddParticleCloudToScene(visuals);
 				game::GfxParticleCloud* cloud = utils::hook::call<game::GfxParticleCloud* (__cdecl)(game::Material*)>(0x49FDC0)(visuals.material);
 #else
-				Assert();
+				game::GfxParticleCloud* cloud = utils::hook::call<game::GfxParticleCloud* (__cdecl)(game::Material*)>(0x5022D0)(visuals.material);
 #endif
 
 				if (cloud)
@@ -211,7 +211,7 @@ namespace fx_system
 			// R_FilterXModelIntoScene(visuals.model, &placement, 0, (unsigned __int16*)&draw->elem->u);
 			utils::hook::call<void(__cdecl)(game::XModel*, game::GfxScaledPlacement*, unsigned __int16, unsigned __int16*)>(0x4BF910)(visuals.model, &placement, 0, (unsigned __int16*)&draw->elem->u);
 #else
-			Assert();
+			utils::hook::call<void(__cdecl)(game::XModel*, game::GfxScaledPlacement*, unsigned __int16, unsigned __int16*)>(0x524FD0)(visuals.model, &placement, 0, (unsigned __int16*)&draw->elem->u);
 #endif
 		}
 	}
@@ -232,7 +232,8 @@ namespace fx_system
 			// R_AddOmniLightToScene(draw->posWorld, draw->visState.size[0], r, g, b);
 			utils::hook::call<void(__cdecl)(const float*, float, float, float, float)>(0x49FE30)(draw->posWorld, draw->visState.size[0], r, g, b);
 #else
-			Assert();
+			// not going to work because rgp.world
+			utils::hook::call<void(__cdecl)(const float*, float, float, float, float)>(0x502340)(draw->posWorld, draw->visState.size[0], r, g, b);
 #endif
 		}
 	}
@@ -253,7 +254,8 @@ namespace fx_system
 			// R_AddSpotLightToScene(draw->posWorld, draw->orient.axis, draw->visState.size[0], r, g, b);
 			utils::hook::call<void(__cdecl)(const float*, const float(*)[3], float, float, float, float)>(0x49FF00)(draw->posWorld, draw->orient.axis, draw->visState.size[0], r, g, b);
 #else
-			Assert();
+			// not going to work because rgp.world
+			utils::hook::call<void(__cdecl)(const float*, const float(*)[3], float, float, float, float)>(0x502410)(draw->posWorld, draw->orient.axis, draw->visState.size[0], r, g, b);
 #endif
 		}
 	}
@@ -1531,7 +1533,7 @@ namespace fx_system
 		// R_BeginMeshVerts(&game::get_frontenddata()->codeMesh);
 		utils::hook::call<void(__cdecl)(game::GfxMeshData* mesh)>(0x4E4250)(&frontend_data->codeMesh);
 #else
-		Assert();
+		utils::hook::call<void(__cdecl)(game::GfxMeshData* mesh)>(0x52B580)(&frontend_data->codeMesh);
 #endif
 	}
 
@@ -1546,7 +1548,7 @@ namespace fx_system
 		// R_EndMeshVerts(&game::get_frontenddata()->codeMesh);
 		utils::hook::call<void(__cdecl)(game::GfxMeshData* mesh)>(0x4E42B0)(&frontend_data->codeMesh);
 #else
-		Assert();
+		utils::hook::call<void(__cdecl)(game::GfxMeshData* mesh)>(0x52B5E0)(&frontend_data->codeMesh);
 #endif
 	}
 
@@ -1570,7 +1572,7 @@ namespace fx_system
 #ifdef FXEDITOR
 		return utils::hook::call<game::GfxPackedVertex* (__cdecl)(__int16)>(0x4B6470)(baseVertex);
 #else
-		Assert();
+		return utils::hook::call<game::GfxPackedVertex* (__cdecl)(__int16)>(0x52F6C0)(baseVertex);
 #endif
 	}
 
@@ -1580,7 +1582,7 @@ namespace fx_system
 #ifdef FXEDITOR
 		return utils::hook::call<bool(__cdecl)(int, r_double_index_t**)>(0x4B61F0)(indexCount, indicesOut);
 #else
-		Assert();
+		return utils::hook::call<bool(__cdecl)(int, r_double_index_t**)>(0x52F440)(indexCount, indicesOut);
 #endif
 	}
 
@@ -1591,7 +1593,7 @@ namespace fx_system
 #ifdef FXEDITOR
 		return utils::hook::call<bool(__cdecl)(int, unsigned __int16*)>(0x4B6250)(vertCount, baseVertex);
 #else
-		Assert();
+		return utils::hook::call<bool(__cdecl)(int, unsigned __int16*)>(0x52F4A0)(vertCount, baseVertex);
 #endif
 	}
 
@@ -1603,7 +1605,8 @@ namespace fx_system
 		utils::hook::call<void(__cdecl)(game::Material*, r_double_index_t*, unsigned int, unsigned int, unsigned int, const char*)>(0x4B5990)(
 			material, indices, indexCount, argOffset, argCount, fxName);
 #else
-		Assert();
+		utils::hook::call<void(__cdecl)(game::Material*, r_double_index_t*, unsigned int, unsigned int, unsigned int, const char*)>(0x52EBE0)(
+			material, indices, indexCount, argOffset, argCount, fxName);
 #endif
 	}
 }

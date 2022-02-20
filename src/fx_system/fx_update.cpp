@@ -1445,8 +1445,9 @@ namespace fx_system
 		}
 	}
 
+#ifndef FXEDITOR
 	// radiant setup
-	/*void FX_SetupCamera_Radiant()
+	void FX_SetupCamera_Radiant()
 	{
 		const auto system = FX_GetSystem(0);
 		const auto cam = &cmainframe::activewnd->m_pCamWnd->camera;
@@ -1466,9 +1467,7 @@ namespace fx_system
 		const float halfTanX = halfTanY * (static_cast<float>(cam->width) / static_cast<float>(cam->height));
 
 		FX_SetupCamera(&system->camera, cam->origin, axis, halfTanX, halfTanY, 0.0f);
-	}*/
-
-
-	
+	}
+#endif
 
 }

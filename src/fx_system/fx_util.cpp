@@ -25,6 +25,29 @@ namespace fx_system
 		return handle;
 	}
 
+	const char* Material_GetName(game::Material* handle)
+	{
+		if (!handle)
+		{
+			Assert();
+		}
+
+		const char* name = Material_FromHandle(handle)->info.name;
+		char sym = *name;
+
+		for (const char* itr = name; sym; ++itr)
+		{
+			if (sym == '/')
+			{
+				name = itr + 1;
+			}
+
+			sym = itr[1];
+		}
+
+		return name;
+	}
+
 	void Material_GetInfo(game::Material* handle, game::MaterialInfo* matInfo)
 	{
 		if (!handle || !matInfo)
@@ -35,4 +58,35 @@ namespace fx_system
 		memcpy(matInfo, Material_FromHandle(handle), sizeof(game::MaterialInfo));
 	}
 
+	// #ENV_DEPENDENT
+	FxEditorEffectDef* get_editor_effect()
+	{
+#ifdef FXEDITOR
+		return reinterpret_cast<FxEditorEffectDef*>(0x6579BC);
+#else
+		return &fx_system::ed_editor_effect;
+#endif
+	}
+
+	// #ENV_DEPENDENT
+	const char* get_loaded_effect_string()
+	{
+#ifdef FXEDITOR
+		return reinterpret_cast<const char*>(0x63787C);
+#else
+
+		if (const auto& fs_basepath = game::Dvar_FindVar("fs_basepath");
+						fs_basepath)
+		{
+			std::string filepath = fs_basepath->current.string;
+						filepath += "\\raw\\fx\\"s;
+						filepath += ed_editor_effect.name + ".efx"s;
+
+			return filepath.c_str();
+		}
+
+		return "";
+		
+#endif
+	}
 }

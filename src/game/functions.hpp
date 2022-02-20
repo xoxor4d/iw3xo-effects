@@ -15,6 +15,8 @@ namespace game
 	extern int& g_processCodeMesh;
 
 	extern fx_system::FxSystem& fx_systemPool;
+	extern fx_system::FxSystemBuffers& fx_systemBufferPool;
+
 	extern game::DxGlobals& dx;
 
 	static DWORD* frontEndDataOut_ptr = (DWORD*)(0xCCAA80);

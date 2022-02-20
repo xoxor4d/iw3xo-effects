@@ -721,6 +721,17 @@ namespace fx_system
 		unsigned int restartList[32];
 	};
 
+	struct FxSystemBuffers
+	{
+		FxEffect effects[1024];
+		FxPool_FxElem elems[2048];
+		FxPool_FxTrail trails[128];
+		FxPool_FxTrailElem trailElems[2048];
+		FxVisState visState[2];
+		unsigned __int16 deferredElems[2048];
+		unsigned __int8 padBuffer[96];
+	};
+
 	struct trace_t
 	{
 		float fraction;

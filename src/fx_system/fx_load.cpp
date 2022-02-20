@@ -1,22 +1,27 @@
 #include "std_include.hpp"
 
 #define Assert()	if(IsDebuggerPresent()) __debugbreak();	else {	\
-					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__); }
+						game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__); }
 
 #define AssertS(str)	if(IsDebuggerPresent()) __debugbreak();	else {	\
-					game::Com_Error("%s\nLine %d :: %s\n%s ", str, __LINE__, __func__, __FILE__); }
+							game::Com_Error("%s\nLine %d :: %s\n%s ", str, __LINE__, __func__, __FILE__); }
 
 // #ENV_DEPENDENT
-#define Warning(unused, fmt, ...)	if(IsDebuggerPresent()) __debugbreak();	else {\
-									game::allow_warnings = true; \
-									game::Com_PrintError(unused, fmt, __VA_ARGS__); \
-									game::allow_warnings = false; }
+#ifdef FXEDITOR
+	#define Warning(unused, fmt, ...)	if(IsDebuggerPresent()) __debugbreak();	else {\
+											game::allow_warnings = true; \
+											game::Com_PrintError(unused, fmt, __VA_ARGS__); \
+											game::allow_warnings = false; }
+#else
+	#define Warning(unused, fmt, ...)	if(IsDebuggerPresent()) __debugbreak(); \
+											game::printf_to_console(fmt, __VA_ARGS__);
+#endif
 
 namespace fx_system
 {
 	$145C5CACE7A579404A9D7C1B73F29F79 fx_load = {};
 
-	const FxFlagDef s_allFlagDefs[] =
+	const FxFlagDef s_allFlagDefs[41] =
 	{
 		{ "looping", 0, 1, 1 },
 		{ "useRandColor", 0, 2, 2 },

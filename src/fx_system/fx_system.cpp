@@ -6,6 +6,23 @@
 namespace fx_system
 {
 	FxSystem fx_systemPool = {};
+	FxSystemBuffers fx_systemBufferPool = {};
+
+	bool ed_is_paused = false;
+	bool ed_is_playing = false;
+	bool ed_is_repeating = false;
+	bool ed_is_filename_valid = false;
+	bool ed_is_editor_effect_valid = false;
+
+	fx_system::FxEffect* ed_active_effect = nullptr;
+	fx_system::FxEditorEffectDef ed_editor_effect = {};
+
+	float ed_timescale = 1.0f;
+	float ed_looppause = 0.3f;
+
+	int ed_playback_tick = 0;
+	int ed_playback_tick_old = 0;
+	int ed_repeat_tickcount = 0;
 
 	// * --------------------------------
 
@@ -15,6 +32,15 @@ namespace fx_system
 		return &game::fx_systemPool;
 #else
 		return &fx_systemPool;
+#endif
+	}
+
+	FxSystemBuffers* FX_GetSystemBuffers([[maybe_unused]] int localClientNum)
+	{
+#ifdef FXEDITOR
+		return &game::fx_systemBufferPool;
+#else
+		return &fx_systemBufferPool;
 #endif
 	}
 
@@ -1700,6 +1726,105 @@ namespace fx_system
 
 			system->firstActiveEffect = activeIndex;
 		}
+	}
+
+	void FX_LinkSystemBuffers(FxSystem* system, FxSystemBuffers* systemBuffers)
+	{
+		system->elems = systemBuffers->elems;
+		system->trails = systemBuffers->trails;
+		system->trailElems = systemBuffers->trailElems;
+		system->effects = systemBuffers->effects;
+		system->visState = systemBuffers->visState;
+		system->deferredElems = systemBuffers->deferredElems;
+	}
+
+	void FX_ResetSystem(FxSystem* system)
+	{
+		system->effects->def = nullptr;
+
+		for (int effectIndex = 0; effectIndex < 1024; ++effectIndex)
+		{
+			system->allEffectHandles[effectIndex] = FX_EffectToHandle(system, &system->effects[effectIndex]);
+		}
+
+		system->firstActiveEffect = 0;
+		system->firstNewEffect = 0;
+		system->firstFreeEffect = 0;
+		system->iteratorCount = 0;
+		system->deferredElemCount = 0;
+		system->firstFreeElem = 0;
+
+		int i;
+		for (i = 0; i < 2047; ++i)
+		{
+			system->elems[i].___u0.nextFree = i + 1;
+		}
+
+		system->elems[i].___u0.nextFree = -1;
+		system->activeElemCount = 0;
+		system->firstFreeTrailElem = 0;
+
+
+		int j;
+		for (j = 0; j < 2047; ++j)
+		{
+			system->trailElems[j].___u0.nextFree = j + 1;
+		}
+
+		system->trailElems[j].___u0.nextFree = -1;
+		system->activeTrailElemCount = 0;
+		system->firstFreeTrail = 0;
+
+		int k;
+		for (k = 0; k < 127; ++k)
+		{
+			system->trails[k].___u0.nextFree = k + 1;
+		}
+
+		system->trails[k].___u0.nextFree = -1;
+		system->activeTrailCount = 0;
+		system->activeSpotLightEffectCount = 0;
+		system->activeSpotLightElemCount = 0;
+		system->gfxCloudCount = 0;
+		system->visState->blockerCount = 0;
+		system->visStateBufferRead = system->visState;
+		system->visStateBufferWrite = system->visState + 1;
+	}
+
+	void FX_InitSystem(int localClientNum)
+	{
+		FxSystem* system = FX_GetSystem(localClientNum);
+		if (!system)
+		{
+			Assert();
+		}
+		memset(system, 0, sizeof(FxSystem));
+
+		FxSystemBuffers* systemBuffers = FX_GetSystemBuffers(localClientNum);
+		if (!systemBuffers)
+		{
+			Assert();
+		}
+		memset(systemBuffers, 0, sizeof(FxSystemBuffers));
+
+		FX_LinkSystemBuffers(system, systemBuffers);
+		//FX_RegisterDvars();
+		FX_ResetSystem(system);
+
+		system->msecNow = 0;
+		system->msecDraw = -1;
+		system->cameraPrev.isValid = 1;
+		system->cameraPrev.frustumPlaneCount = 0;
+		system->frameCount = 1;
+
+		if (system->firstActiveEffect || system->firstNewEffect || system->firstFreeEffect)
+		{
+			Assert();
+		}
+
+		//FX_InitMarksSystem((FxMarksSystem*)&markSystem);
+		system->localClientNum = static_cast<unsigned char>(localClientNum);
+		system->isInitialized = true;
 	}
 	
 }
