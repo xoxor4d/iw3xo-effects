@@ -141,7 +141,7 @@ namespace fx_system
 
 		case WRKCMD_GENERATE_FX_VERTS:
 
-			if (!game::dx.deviceLost)
+			if (!game::dx->deviceLost)
 			{
 				FX_GenerateVerts((FxGenerateVertsCmd *)cmd);
 

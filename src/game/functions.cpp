@@ -16,7 +16,7 @@ namespace game
 	fx_system::FxSystem& fx_systemPool = *reinterpret_cast<fx_system::FxSystem*>(0xAD5D80);
 	fx_system::FxSystemBuffers& fx_systemBufferPool = *reinterpret_cast<fx_system::FxSystemBuffers*>(0xB1F100);
 
-	game::DxGlobals& dx = *reinterpret_cast<game::DxGlobals*>(0xB6E204);
+	game::DxGlobals* dx = reinterpret_cast<game::DxGlobals*>(0xB6E204);
 
 	game::GfxBackEndData* get_backenddata()
 	{

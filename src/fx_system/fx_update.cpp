@@ -1443,6 +1443,8 @@ namespace fx_system
 			camera->frustum[5][3] = -camera->frustum[0][3] - zfar;
 			camera->frustumPlaneCount = 6;
 		}
+
+		camera->isValid = 1;
 	}
 
 #ifndef FXEDITOR

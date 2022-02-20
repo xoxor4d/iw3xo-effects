@@ -68,6 +68,11 @@ namespace fx_system
 
 	// * --------------------------------
 
+	void FX_UnregisterAll()
+	{
+		memset(&fx_load, 0, sizeof(fx_load));
+	}
+
 	game::XModel* FX_RegisterModel(const char* modelName)
 	{
 		return game::R_RegisterModel(modelName);
@@ -1268,7 +1273,12 @@ namespace fx_system
 
 		game::Com_BeginParseSession(parseSessionName);
 		game::Com_SetSpaceDelimited(0);
+
+#ifdef FXEDITOR
 		game::Com_SetParseNegativeNumbers(1);
+#else
+		game::Com_SetParseNegativeNumbers();
+#endif
 
 		const char* parse = buffer;
 		const char* token = game::Com_Parse(&parse);

@@ -17,7 +17,7 @@ namespace game
 	extern fx_system::FxSystem& fx_systemPool;
 	extern fx_system::FxSystemBuffers& fx_systemBufferPool;
 
-	extern game::DxGlobals& dx;
+	extern game::DxGlobals* dx;
 
 	static DWORD* frontEndDataOut_ptr = (DWORD*)(0xCCAA80);
 	static DWORD* backEndDataOut_ptr = (DWORD*)(0xDED840);
