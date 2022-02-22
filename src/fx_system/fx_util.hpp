@@ -10,6 +10,14 @@ namespace fx_system
 	const char*			Material_GetName(game::Material* handle);
 	void				Material_GetInfo(game::Material* handle, game::MaterialInfo* matInfo);
 
+	void				alloc_assign_string(const char** visuals, const char* in);
+
 	FxEditorEffectDef*	get_editor_effect();
-	const char*			get_loaded_effect_string();
+
+#ifdef FXEDITOR
+	const char* get_loaded_effect_string();
+#else
+	std::string			get_loaded_effect_string();
+#endif
+
 }

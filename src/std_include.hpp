@@ -86,7 +86,6 @@
 #include "fx_system/fx_curves.hpp"
 #include "fx_system/fx_load.hpp"
 #include "fx_system/fx_save.hpp"
-#include "fx_system/fx_editor.hpp"
 
 #include "components/loader.hpp"
 
