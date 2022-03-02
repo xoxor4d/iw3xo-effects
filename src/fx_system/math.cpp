@@ -111,15 +111,15 @@ namespace fx_system
 		m[2][2] = vf[2];
 
 		float zrot[3][3] = {};
-		zrot[0][0] = 1.0;
+		zrot[0][0] = 1.0f;
 		zrot[0][1] = 0.0f;
 		zrot[0][2] = 0.0f;
-		zrot[1][0] = 0.0;
-		zrot[1][1] = 1.0;
-		zrot[1][2] = 0.0;
+		zrot[1][0] = 0.0f;
+		zrot[1][1] = 1.0f;
+		zrot[1][2] = 0.0f;
 		zrot[2][0] = 0.0f;
 		zrot[2][1] = 0.0f;
-		zrot[2][2] = 1.0;
+		zrot[2][2] = 1.0f;
 
 		float im[3][3];
 		memcpy(im, m, sizeof(im));
@@ -153,8 +153,10 @@ namespace fx_system
 		zrot[1][0] = -zrot[0][1];
 		zrot[1][1] =  zrot[0][0];
 
-		MatrixMultiply(m, zrot, zrot);
-		MatrixMultiply(zrot, im, m);
+		float temp[3][3] = {};
+
+		MatrixMultiply(m, zrot, temp);
+		MatrixMultiply(temp, im, m);
 
 		dst[0] = m[0][0] * point[0] + m[0][1] * point[1] + point[2] * m[0][2];
 		dst[1] = m[1][0] * point[0] + m[1][1] * point[1] + point[2] * m[1][2];
