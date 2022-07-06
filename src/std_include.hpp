@@ -60,6 +60,7 @@
 #define STATIC_ASSERT_SIZE(struct, size)				static_assert(sizeof(struct) == size, "Size check")
 #define STATIC_ASSERT_OFFSET(struct, member, offset)	static_assert(offsetof(struct, member) == offset, "Offset check")
 
+#include "ode/ode.h"
 #include "detours/Detours.h"
 #include "game/structs.hpp"
 #include "utils/utils.hpp"
