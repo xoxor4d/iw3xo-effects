@@ -2,19 +2,6 @@
 
 #define LODWORD(x)  (*((DWORD*)&(x)))  // low dword
 
-// undef in env != the stock fx editor
-#define FXEDITOR
-
-// labels:
-/*
- * #MARKS
- * #PHYS
- *
- * #ENV_DEPENDENT
- * #NOT_IMPL
- * #UNFINISHED
- */
-
 namespace fx_system
 {
 	constexpr auto FX_HANDLE_NONE = 0xFFFF;

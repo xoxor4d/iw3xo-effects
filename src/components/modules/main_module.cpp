@@ -54,6 +54,9 @@ namespace components
 
 		// works but keeping it active doesn't make sense
 		//utils::hook::detour(0x403C80, fx_system::FX_SaveEditorEffect, HK_JUMP);
+
+		utils::hook(0x404DB8, physics::Phys_Init, HOOK_CALL).install()->quick();
+		utils::hook(0x4A2EC8, fx_system::FX_RunPhysics, HOOK_CALL).install()->quick();
 	}
 
 	main_module::~main_module()

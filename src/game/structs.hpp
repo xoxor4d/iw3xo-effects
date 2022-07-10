@@ -2806,6 +2806,18 @@ namespace game
 		float axis[3][3];
 	};
 
+	struct __declspec(align(16)) cbrush_t
+	{
+		float mins[3];
+		int contents;
+		float maxs[3];
+		unsigned int numsides;
+		cbrushside_t* sides;
+		__int16 axialMaterialNum[2][3];
+		char* baseAdjacentSide;
+		__int16 firstAdjacentSideOffsets[2][3];
+		char edgeCount[2][3];
+	};
 	
 	enum ENTITY_DEFS
 	{

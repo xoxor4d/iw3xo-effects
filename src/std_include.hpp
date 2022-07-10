@@ -4,6 +4,19 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
 
+// undef in env != the stock fx editor
+#define FXEDITOR
+
+// labels:
+/*
+ * #MARKS
+ * #PHYS
+ *
+ * #ENV_DEPENDENT
+ * #NOT_IMPL
+ * #UNFINISHED
+ */
+
 // Version number
 #include <version.hpp>
 
@@ -60,6 +73,9 @@
 #define STATIC_ASSERT_SIZE(struct, size)				static_assert(sizeof(struct) == size, "Size check")
 #define STATIC_ASSERT_OFFSET(struct, member, offset)	static_assert(offsetof(struct, member) == offset, "Offset check")
 
+#define Assert()	if(IsDebuggerPresent()) __debugbreak();	else {	\
+					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__); }
+
 #include "ode/ode.h"
 #include "detours/Detours.h"
 #include "game/structs.hpp"
@@ -87,6 +103,15 @@
 #include "fx_system/fx_curves.hpp"
 #include "fx_system/fx_load.hpp"
 #include "fx_system/fx_save.hpp"
+
+#include "physics/physics_structs.hpp"
+#include "physics/phys_math.hpp"
+#include "physics/phys_utils.hpp"
+#include "physics/phys_dvars.hpp"
+#include "physics/phys_ode.hpp"
+#include "physics/phys_world_collision.hpp"
+#include "physics/phys_contacts.hpp"
+#include "physics/phys_local.hpp"
 
 #include "components/loader.hpp"
 

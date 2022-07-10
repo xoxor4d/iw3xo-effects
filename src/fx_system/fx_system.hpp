@@ -60,6 +60,7 @@ namespace fx_system
 
 
 	void			FX_SpawnRunner(FxSpatialFrame* effectFrameWhenPlayed, FxEffect* effect, FxElemDef* remoteElemDef, FxSystem* system, int randomSeed, int msecWhenPlayed);
+	bool			FX_SpawnModelPhysics(FxElemDef* elem, FxEffect* effect, int random_seed, FxElem* remote_elem);
 	void			FX_SpawnElem(FxSystem* system, FxEffect* effect, int elemDefIndex, FxSpatialFrame* effectFrameWhenPlayed, int msecWhenPlayed, float distanceWhenPlayed, int sequence);
 	void			FX_SpawnSpotLightElem(FxSystem* system, FxElem* elem);
 
@@ -107,5 +108,6 @@ namespace fx_system
 	void			FX_RunGarbageCollection_FreeSpotLight(FxSystem* system, unsigned __int16 effectHandle);
 	void			FX_RunGarbageCollectionAndPrioritySort(FxSystem* system);
 
+	void			FX_RunPhysics(int localClientNum);
 	void			FX_InitSystem(int localClientNum);
 }

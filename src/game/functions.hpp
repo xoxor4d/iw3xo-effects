@@ -54,4 +54,16 @@ namespace game
 	static utils::function<char* (const char**)> Com_Parse = 0x442500;
 	static utils::function<int (const char**, const char*, int)> Com_MatchToken = 0x4425B0;
 	static utils::function<void ()> Com_UngetToken = 0x441DB0;
+
+	inline auto Dvar_RegisterBool = reinterpret_cast<game::dvar_s * (*)(const char* dvar_name, char value, __int16 flags, const char* description)>(0x43F300);
+	inline auto Dvar_RegisterInt = reinterpret_cast<game::dvar_s * (*)(const char* dvar_name, int value, int mins, int maxs, __int16 flags, const char* description)>(0x43F360);
+	inline auto Dvar_RegisterFloat = reinterpret_cast<game::dvar_s * (*)(const char* dvar_name, float value, float mins, float maxs, __int16 flags, const char* description)>(0x43F3C0);
+	//inline auto Dvar_RegisterVec2 = reinterpret_cast<game::dvar_s * (*)(const char* dvar_name, float x, float y, float mins, float maxs, __int16 flags, const char* description)>(0x4B2750);
+	//inline auto Dvar_RegisterVec3 = reinterpret_cast<game::dvar_s * (*)(const char* dvar_name, float x, float y, float z, float mins, float maxs, __int16 flags, const char* description)>(0x4B27D0);
+
+	inline auto Dvar_SetBool = reinterpret_cast<void (*)(game::dvar_s* dvar, bool value)>(0x440490);
+	inline auto Dvar_SetInt = reinterpret_cast<void (*)(game::dvar_s * dvar, int value)>(0x440730);
+	inline auto Dvar_SetFloat = reinterpret_cast<void (*)(game::dvar_s * dvar, float value)>(0x4404D0);
+
+	inline auto FX_RegisterPhysPreset = reinterpret_cast<game::PhysPreset* (*)(const char* name)>(0x475F30);
 }
