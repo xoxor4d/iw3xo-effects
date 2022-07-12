@@ -10,6 +10,7 @@ namespace components
 		loader::mem_allocator_.clear();
 
 		loader::_register(new main_module());
+		loader::_register(new command());
 
 		// print to external console
 		printf("[Modules] ---------------------\n");

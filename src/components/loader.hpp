@@ -26,3 +26,4 @@ namespace components
 }
 
 #include "modules/main_module.hpp"
+#include "modules/command.hpp"

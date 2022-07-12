@@ -593,7 +593,7 @@ namespace fx_system
 		float velocity[3] = {};
 		FX_GetVelocityAtTime(elem, random_seed, msecLifeSpan, 0.0f, &orientation, remote_elem->baseVel, velocity);
 
-		float vel[3];
+		float vel[3] = {};
 		vel[0] = 1000.0f * (fx_randomTable[3 + random_seed] * elem->angularVelocity[0].amplitude + elem->angularVelocity[0].base);
 		vel[1] = 1000.0f * (fx_randomTable[4 + random_seed] * elem->angularVelocity[1].amplitude + elem->angularVelocity[1].base);
 		vel[2] = 1000.0f * (fx_randomTable[5 + random_seed] * elem->angularVelocity[2].amplitude + elem->angularVelocity[2].base);
@@ -1831,9 +1831,11 @@ namespace fx_system
 		system->visStateBufferWrite = system->visState + 1;
 	}
 
+
 	void FX_RunPhysics(int localClientNum)
 	{
 		physics::Phys_RunToTime(1, FX_GetSystem(localClientNum)->msecNow);
+		physics::draw_debug();
 	}
 
 	void FX_InitSystem(int localClientNum)

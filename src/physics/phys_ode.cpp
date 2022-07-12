@@ -1,5 +1,7 @@
 #include "std_include.hpp"
 
+#include "collision_kernel.h"
+
 #define Assert()	if(IsDebuggerPresent()) __debugbreak();	else {	\
 					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__); }
 
@@ -19,6 +21,25 @@ namespace physics
 		Pool_Init(odeGlob.bodies, &odeGlob.bodyPool, 0x150u, 512);
 		Pool_Init(odeGlob.geoms, &odeGlob.geomPool, 0xD0u, 2048);
 	}*/
+
+	void draw_debug()
+	{
+		// R_AddDebugString(DebugGlobals *debug, const float *origin, const float *color, float scale, char *string)
+
+		const float color[4] = { 1.0f, 1.0f, 0.0f, 1.0f };
+		const auto dbg = game::get_frontenddata()->debugGlobals;
+
+
+		const float origin0[3] = { 60.0f, 80.0f, 50.0f };
+		const auto active_str = utils::va("active: %d", physGlob.userDataPool.activeCount);
+		game::R_AddDebugString(dbg, origin0, color, 1.0f, active_str);
+		
+		
+
+		const float origin1[3] = { 60.0f, 80.0f, 38.0f };
+		const auto world_seconds_str = utils::va("world msec: %.2f", physGlob.world_seconds[1] * 1000.0f);
+		game::R_AddDebugString(dbg, origin1, color, 1.0f, world_seconds_str);
+	}
 
 	void** Pool_Alloc(pooldata_t* pooldata)
 	{
@@ -79,11 +100,6 @@ namespace physics
 			Assert();
 		}
 
-		if (reinterpret_cast<std::uint8_t>(pool) & 3)
-		{
-			Assert();
-		}
-
 		unsigned int v8; // r9
 		DWORD* v9; // r10
 		unsigned int v10; // ctr
@@ -122,9 +138,14 @@ namespace physics
 			}
 		}
 
-		*(DWORD*)data = *(DWORD*)pooldata->firstFree; // ????
+		DWORD* dd = reinterpret_cast<DWORD*>(data);
+		*dd = (DWORD)pooldata->firstFree;
+		pooldata->firstFree = dd;
 		--pooldata->activeCount;
-		pooldata->firstFree = data;
+
+		//*(DWORD*)data = *(DWORD*)pooldata->firstFree; // ????
+		//--pooldata->activeCount;
+		//pooldata->firstFree = data;
 	}
 
 	int Pool_FreeCount(pooldata_t* pooldata)
@@ -198,7 +219,7 @@ namespace physics
 			Assert();
 		}
 
-		dBodySetAngularVel(body, velocity[2], *velocity, velocity[1]);
+		dBodySetAngularVel(body, velocity[2], velocity[0], velocity[1]);
 	}
 
 	void Phys_BodyGetRotation(dxBody* body, float(*outAxis)[3])
@@ -220,6 +241,7 @@ namespace physics
 		outpos[2] = pos[2];
 	}
 
+	// checked
 	void Phys_ObjGetPositionFromCenterOfMass(dxBody* body, const float* centerOfGravity, float* objPos, const float(*rotation)[3])
 	{
 		const auto userData = static_cast<PhysObjUserData*>(dBodyGetData(body));
@@ -238,8 +260,8 @@ namespace physics
 	int Phys_ObjGetSnapshot(PhysWorld worldIndex, dxBody* body, float* outPos, float(*outMat)[3])
 	{
 		const auto data = static_cast<PhysObjUserData*>(dBodyGetData(body));
-		Phys_ObjGetPositionFromCenterOfMass(body, data->savedPos, outPos, data->savedRot);
-		memcpy(outMat, data->savedRot, 36u);
+		Phys_ObjGetPositionFromCenterOfMass(body, data->savedPos, outPos, data->savedRot);memcpy(outMat, data->savedRot, sizeof(float[3][3]));
+
 		return physGlob.worldData[worldIndex].timeLastSnapshot;
 	}
 
@@ -251,8 +273,8 @@ namespace physics
 		}
 
 		const auto dx_posr = dBodyGetPosition(id);
-
-		Phys_OdeMatrix3ToAxis(dx_posr, outRotation);
+		const auto rot = dBodyGetRotation(id); // took ~ 8 hours to find out that this was missing. 
+		Phys_OdeMatrix3ToAxis(rot, outRotation);
 		outPosition[0] = dx_posr[0];
 		outPosition[1] = dx_posr[1];
 		outPosition[2] = dx_posr[2];
@@ -270,20 +292,19 @@ namespace physics
 		float snap_pos[3];
 		float obj_pos[3];
 
-		const auto lerp = physGlob.worldData[worldIndex].timeNowLerpFrac;
+		const auto frac = physGlob.worldData[worldIndex].timeNowLerpFrac;
 		Phys_ObjGetSnapshot(static_cast<PhysWorld>(worldIndex), reinterpret_cast<dxBody*>(id), snap_pos, snap_rot);
 		Phys_ObjGetPosition(reinterpret_cast<dxBody*>(id), obj_pos, obj_rot);
 
-		outPos[0] = snap_pos[0] + (obj_pos[0] - snap_pos[0]) * lerp;
-		outPos[1] = snap_pos[1] + (obj_pos[1] - snap_pos[1]) * lerp;
-		outPos[2] = snap_pos[2] + (obj_pos[2] - snap_pos[2]) * lerp;
+		Vec3Lerp(snap_pos, obj_pos, frac, outPos);
 
-		fx_system::AxisToQuat(snap_rot, pos_quat);
-		fx_system::AxisToQuat(obj_rot, rot_quat);
-		QuatLerp(pos_quat, rot_quat, lerp, out_quat);
+		fx_system::AxisToQuat(snap_rot, rot_quat);
+		fx_system::AxisToQuat(obj_rot, pos_quat);
+
+		QuatLerp(rot_quat, pos_quat, frac, out_quat);
 		fx_system::Vec4Normalize(out_quat);
 	}
-
+	
 	void ODE_GeomTransformGetOffset(dupe_dxGeomTransform* g, float* vec)
 	{
 		if (!g || g->type != 6)
@@ -291,9 +312,15 @@ namespace physics
 			Assert();
 		}
 
-		vec[0] = g->transform_posr.pos[0];
+		vec[0] = g->obj->offset_posr->pos[0];
+		vec[1] = g->obj->offset_posr->pos[1];
+		vec[2] = g->obj->offset_posr->pos[2];
+
+		// not g->transform_posr?
+
+		/*vec[0] = g->transform_posr.pos[0];
 		vec[1] = g->transform_posr.pos[1];
-		vec[2] = g->transform_posr.pos[2];
+		vec[2] = g->transform_posr.pos[2];*/
 	}
 
 	void ODE_GeomTransformSetOffset(dupe_dxGeomTransform* g, const float* vec)
@@ -303,10 +330,15 @@ namespace physics
 			Assert();
 		}
 
-		g->transform_posr.pos[0] = vec[0];
+		g->obj->offset_posr->pos[0] = vec[0];
+		g->obj->offset_posr->pos[1] = vec[1];
+		g->obj->offset_posr->pos[2] = vec[2];
+
+		// not g->transform_posr?
+
+		/*g->transform_posr.pos[0] = vec[0];
 		g->transform_posr.pos[1] = vec[1];
-		g->transform_posr.pos[2] = vec[2];
-		//g->transform_posr.R[0] = 0.0f; // ??
+		g->transform_posr.pos[2] = vec[2];*/
 	}
 
 	void ODE_GeomTransformSetRotation(dupe_dxGeomTransform* g, const float* origin, const float(*rotation)[3])
@@ -316,14 +348,20 @@ namespace physics
 			Assert();
 		}
 
-		Phys_AxisToOdeMatrix3(rotation, g->transform_posr.R);
+		Phys_AxisToOdeMatrix3(rotation, g->obj->offset_posr->R);
+		g->obj->offset_posr->pos[0] = origin[0];
+		g->obj->offset_posr->pos[1] = origin[1];
+		g->obj->offset_posr->pos[2] = origin[2];
+
+		// not g->transform_posr?
+
+		/*Phys_AxisToOdeMatrix3(rotation, g->transform_posr.R);
 		g->transform_posr.pos[0] = origin[0];
 		g->transform_posr.pos[1] = origin[1];
-		g->transform_posr.pos[2] = origin[2];
-		//g->transform_posr.R[0] = 0.0f; // ??
+		g->transform_posr.pos[2] = origin[2];*/
 	}
 
-	void Phys_AdjustForNewCenterOfMass(dxBody* b, const float* newRelCenterOfMass)
+	void Phys_AdjustForNewCenterOfMass(dxBody* b, const float* new_rel_center_of_mass)
 	{
 		const auto bodyUserData = static_cast<PhysObjUserData*>(dBodyGetData(b));
 		if (!bodyUserData)
@@ -331,9 +369,9 @@ namespace physics
 			Assert();
 		}
 
-		float b_rot[3][3];
-		float b_pos[3];
-		float objPos[3];
+		float b_rot[3][3] = {};
+		float b_pos[3] = {};
+		float objPos[3] = {};
 
 		Phys_BodyGetRotation(b, b_rot);
 		Phys_GetBodyPosition(b, b_pos);
@@ -342,19 +380,18 @@ namespace physics
 		b_pos[0] = -bodyUserData->translation[0];
 		b_pos[1] = -bodyUserData->translation[1];
 		b_pos[2] = -bodyUserData->translation[2];
-		bodyUserData->translation[0] = -*newRelCenterOfMass;
-		bodyUserData->translation[1] = -newRelCenterOfMass[1];
-		bodyUserData->translation[2] = -newRelCenterOfMass[2];
+		bodyUserData->translation[0] = -new_rel_center_of_mass[0];
+		bodyUserData->translation[1] = -new_rel_center_of_mass[1];
+		bodyUserData->translation[2] = -new_rel_center_of_mass[2];
 
-		float vec[3], dvec[3];
-		AxisTransformVec3(b_rot[0], newRelCenterOfMass, vec);
-		dvec[0] = vec[0] + objPos[0];
-		dvec[1] = vec[1] + objPos[1];
-		dvec[2] = vec[2] + objPos[2];
-		dBodySetPosition(b, dvec[0], dvec[1], dvec[2]);
+		float vec[3], new_center_of_mass[3];
+		AxisTransformVec3(b_rot[0], new_rel_center_of_mass, vec);
+		new_center_of_mass[0] = vec[0] + objPos[0];
+		new_center_of_mass[1] = vec[1] + objPos[1];
+		new_center_of_mass[2] = vec[2] + objPos[2];
+		dBodySetPosition(b, new_center_of_mass[0], new_center_of_mass[1], new_center_of_mass[2]);
 
-		auto geom = dBodyGetFirstGeom(b);
-		for (auto i = geom; geom; i = geom)
+		for (auto i = dBodyGetFirstGeom(b); i; i = i = dGeomGetBodyNext(i))
 		{
 			if (dGeomGetClass(i) == 6)
 			{
@@ -363,17 +400,16 @@ namespace physics
 				tvec[0] = tvec[0] + b_pos[0];
 				tvec[1] = tvec[1] + b_pos[1];
 				tvec[2] = tvec[2] + b_pos[2];
-				tvec[0] = tvec[0] - *newRelCenterOfMass;
-				tvec[1] = tvec[1] - newRelCenterOfMass[1];
-				tvec[2] = tvec[2] - newRelCenterOfMass[2];
+				tvec[0] = tvec[0] - new_rel_center_of_mass[0];
+				tvec[1] = tvec[1] - new_rel_center_of_mass[1];
+				tvec[2] = tvec[2] - new_rel_center_of_mass[2];
 				ODE_GeomTransformSetOffset(reinterpret_cast<dupe_dxGeomTransform*>(i), tvec);
 			}
-			geom = dGeomGetBodyNext(i);
 		}
 
-		bodyUserData->savedPos[0] = dvec[0];
-		bodyUserData->savedPos[1] = dvec[1];
-		bodyUserData->savedPos[2] = dvec[2];
+		bodyUserData->savedPos[0] = new_center_of_mass[0];
+		bodyUserData->savedPos[1] = new_center_of_mass[1];
+		bodyUserData->savedPos[2] = new_center_of_mass[2];
 	}
 
 	void Phys_MassSetBrushTotal(const float* productsOfInertia, const float* momentsOfInertia, dMass* mass, float total_mass)
@@ -548,10 +584,10 @@ namespace physics
 			break;
 		}
 
-		//if (!new_geom)
-		//{
-			//Com_PrintWarning(20, "Maximum number of physics geoms exceeded\n");
-		//}
+		if (!new_geom && state->type != PHYS_GEOM_NONE)
+		{
+			printf("Maximum number of physics geoms exceeded\n");
+		}
 
 		if (state->isOriented && new_geom)
 		{
@@ -565,6 +601,7 @@ namespace physics
 			dGeomTransformSetGeom(phys_geom, new_geom);
 			ODE_GeomTransformSetRotation(reinterpret_cast<dupe_dxGeomTransform*>(phys_geom), game::vec3_origin, state->orientation);
 		}
+
 		return dBodySetMass(body, &mass);
 	}
 
@@ -655,7 +692,7 @@ namespace physics
 
 	void Phys_ObjAddGeomBox(PhysWorld worldIndex, dxBody* id, const float* mins, const float* maxs)
 	{
-		float centerOfMass[3]; // [esp+98h] [ebp-Ch] BYREF
+		float centerOfMass[3];
 
 		if (!id)
 		{
@@ -758,13 +795,18 @@ namespace physics
 		{
 			Assert();
 		}
+
+		if (physGlob.userDataPool.activeCount >= 512)
+		{
+			return nullptr;
+		}
 		
 		dWorldSetAutoDisableLinearThreshold(physGlob.world[worldIndex], phys_autoDisableLinear->current.value);
 		dWorldSetAutoDisableAngularThreshold(physGlob.world[worldIndex], phys_autoDisableAngular->current.value);
 		dWorldSetAutoDisableTime(physGlob.world[worldIndex], phys_autoDisableTime->current.value);
 
-		if (const auto body = dBodyCreate(physGlob.world[worldIndex]); 
-								  body)
+		if (const auto	body = dBodyCreate(physGlob.world[worldIndex]);
+						body)
 		{
 			if (worldIndex == PHYS_WORLD_RAGDOLL)
 			{
@@ -775,6 +817,7 @@ namespace physics
 			if (!user_data)
 			{
 				Assert();
+				return nullptr;
 			}
 
 			memset(user_data, 0, sizeof(PhysObjUserData));
@@ -821,7 +864,7 @@ namespace physics
 			 return body;
 		}
 
-		//Com_PrintWarning(20, "Maximum number of physics bodies exceeded (more than %i)\n");
+		printf("Maximum number of physics bodies exceeded(more than 512)\n");
 		return nullptr;
 	}
 
@@ -858,10 +901,11 @@ namespace physics
 		state.centerOfMassOffset[2] = 0.0f;
 		state.timeLastAsleep = physGlob.worldData[worldIndex].timeLastUpdate;
 		state.state = PHYS_OBJ_STATE_POSSIBLY_STUCK;
-		state.unk = true;
+		state.unk = true; // SET BACK TO TRUE or there is no velocity applied !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		state.mass = physPreset->mass;
 		state.bounce = physPreset->bounce;
 		state.friction = physPreset->friction;
+
 		return Phys_CreateBodyFromState(worldIndex, &state);
 	}
 
@@ -878,8 +922,9 @@ namespace physics
 			Assert();
 		}
 
-		dBodyAddForceAtPos(id, impulse[0] * step, impulse[1] * step, impulse[2] * step, *worldPos, worldPos[1], worldPos[2]);
+		dBodyAddForceAtPos(id, impulse[0] * step, impulse[1] * step, impulse[2] * step, worldPos[0], worldPos[1], worldPos[2]);
 		dBodyEnable(id);
+
 		const auto data = static_cast<PhysObjUserData*>(dBodyGetData(id));
 		data->timeLastAsleep = physGlob.worldData[Phys_IndexFromODEWorld(ODE_BodyGetWorld(id))].timeLastUpdate;
 	}
@@ -1019,9 +1064,16 @@ namespace physics
 
 	void ODE_ForEachBody(dxWorld* world, void(__cdecl *func)(dxBody*))
 	{
+		int count = 0;
 		for (auto i = world->firstbody; i; i = (dxBody*)i->next)
 		{
+			if(count >= 512)
+			{
+				break;
+			}
+
 			func(i);
+			count++;
 		}
 	}
 
@@ -1030,14 +1082,14 @@ namespace physics
 		const auto world = physGlob.world[worldIndex];
 		for (auto b = world->firstbody; b; b = (dxBody*)b->next)
 		{
-			if ((b->flags & 4) == 0)
+			if ((b->flags & dxBodyDisabled) == 0)
 			{
-				b->facc[0] = 0.0;
-				b->facc[1] = 0.0;
-				b->facc[2] = 0.0;
-				b->tacc[0] = 0.0;
-				b->tacc[1] = 0.0;
-				b->tacc[2] = 0.0;
+				b->facc[0] = 0.0f;
+				b->facc[1] = 0.0f;
+				b->facc[2] = 0.0f;
+				b->tacc[0] = 0.0f;
+				b->tacc[1] = 0.0f;
+				b->tacc[2] = 0.0f;
 
 				for (auto g = b->geom; g; g = dGeomGetBodyNext(g))
 				{
@@ -1072,7 +1124,9 @@ namespace physics
 		ContactList list1 = {};
 		ContactList list2 = {};
 
-		unsigned int world_type = *((DWORD*)userData + 1);
+		const int world_type = *(int*)userData;
+
+		//unsigned int world_type = data->type; //*((DWORD*)userData + 1); // WRONG
 		auto body_1 = dGeomGetBody(geom1);
 		auto body_2 = dGeomGetBody(geom2);
 
@@ -1220,10 +1274,13 @@ namespace physics
 		{
 			Assert();
 		}
+
 		if (timeNow < wd->timeLastSnapshot)
 		{
 			Phys_RewindCurrentTime(static_cast<PhysWorld>(worldIndex), timeNow);
 		}
+
+		//printf("time: %d\n", timeNow);
 
 		const auto dx_world = physGlob.world[worldIndex];
 		if (wd->timeLastUpdate < timeNow)
@@ -1278,7 +1335,7 @@ namespace physics
 		}
 		else
 		{
-			const auto delta = static_cast<float>((timeNow - wd->timeLastSnapshot)) / static_cast<float>((wd->timeLastUpdate - wd->timeLastSnapshot));
+			auto delta = static_cast<float>((timeNow - wd->timeLastSnapshot)) / static_cast<float>((wd->timeLastUpdate - wd->timeLastSnapshot));
 			wd->timeNowLerpFrac = delta;
 
 			if (delta < 0.0f || delta > 1.0f)

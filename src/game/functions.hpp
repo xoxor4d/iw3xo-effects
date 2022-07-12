@@ -66,4 +66,10 @@ namespace game
 	inline auto Dvar_SetFloat = reinterpret_cast<void (*)(game::dvar_s * dvar, float value)>(0x4404D0);
 
 	inline auto FX_RegisterPhysPreset = reinterpret_cast<game::PhysPreset* (*)(const char* name)>(0x475F30);
+	inline auto R_AddDebugString = reinterpret_cast<void (*)(game::DebugGlobals* debug, const float* origin, const float* color, float scale, const char* string)>(0x4C9930);
+
+	inline auto R_InitFonts = reinterpret_cast<void (*)()>(0x4D3990);
+	inline auto Dvar_SetFromStringByNameFromSource = reinterpret_cast<void (*)(const char* dvar, const char* val, int src)>(0x440A40);
+	inline auto Dvar_DisplayableValue = reinterpret_cast<const char* (*)(game::dvar_s* dvar)>(0x43CAD0);
+	
 }

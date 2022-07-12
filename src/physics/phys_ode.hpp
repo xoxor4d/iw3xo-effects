@@ -11,6 +11,7 @@ namespace physics
 	extern odeGlob_t odeGlob;
 	extern PhysGlob physGlob;
 
+	void draw_debug();
 	void Phys_ObjAddForce(PhysWorld worldIndex, dxBody* id, const float* worldPos, const float* impulse);
 	void Phys_ObjGetInterpolatedState(int worldIndex, int id, float* outPos, float* out_quat);
 	dxBody* Phys_ObjCreate(int worldIndex, const float* position, const float* quat, const float* velocity, game::PhysPreset* physPreset);

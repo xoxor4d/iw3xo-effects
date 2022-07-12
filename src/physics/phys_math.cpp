@@ -26,6 +26,22 @@ namespace physics
 		return min - val < 0.0f ? min : val;
 	}
 
+	void Vec3Lerp(const float* from, const float* to, float frac, float* out)
+	{
+		out[0] = ((to[0] - from[0]) * frac) + from[0];
+		out[1] = ((to[1] - from[1]) * frac) + from[1];
+		out[2] = ((to[2] - from[2]) * frac) + from[2];
+	}
+
+	void Vec4Lerp(const float* from, const float* to, float frac, float* out)
+	{
+		out[0] = ((to[0] - from[0]) * frac) + from[0];
+		out[1] = ((to[1] - from[1]) * frac) + from[1];
+		out[2] = ((to[2] - from[2]) * frac) + from[2];
+		out[3] = ((to[3] - from[3]) * frac) + from[3];
+	}
+
+	// checked
 	void QuatLerp(const float* qa, const float* qb, float frac, float* out)
 	{
 		if (qb[0] * qa[0] + qa[1] * qb[1] + qa[2] * qb[2] + qb[3] * qa[3] < 0.0f)
@@ -35,20 +51,15 @@ namespace physics
 			out[2] = -qb[2];
 			out[3] = -qb[3];
 
-			out[0] = ((out[0] - qa[0]) * frac) + qa[0];
-			out[1] = ((out[1] - qa[1]) * frac) + qa[1];
-			out[2] = ((out[2] - qa[2]) * frac) + qa[2];
-			out[3] = ((out[3] - qa[3]) * frac) + qa[3];
+			Vec4Lerp(qa, out, frac, out);
 		}
 		else
 		{
-			out[0] = ((qb[0] - qa[0]) * frac) + qa[0];
-			out[1] = ((qb[1] - qa[1]) * frac) + qa[1];
-			out[2] = ((qb[2] - qa[2]) * frac) + qa[2];
-			out[3] = ((qb[3] - qa[3]) * frac) + qa[3];
+			Vec4Lerp(qa, qb, frac, out);
 		}
 	}
 
+	// checked
 	void QuatToAxis(const float* quat, float* axis)
 	{
 		const float qa[4] =

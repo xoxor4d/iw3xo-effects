@@ -317,7 +317,7 @@ namespace physics
 		} while (idx2 != 2);
 	}
 
-	void __cdecl Phys_GenerateGroupContacts(const ContactList* contacts, float(*centroid)[3], int* group, ContactList* out)
+	void Phys_GenerateGroupContacts(const ContactList* contacts, float(*centroid)[3], int* group, ContactList* out)
 	{
 		float* v4; // edx
 		int v12; // eax

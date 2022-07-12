@@ -20,59 +20,29 @@ namespace physics
 
 	void Phys_OdeMatrix3ToAxis(const float* inMatrix, float(*outAxis)[3])
 	{
-		const float* in;
-		float(*out)[3];
-		int c;
-
-		int r = 3;
-		do
+		for (auto r = 0; r < 3; ++r)
 		{
-			in = inMatrix;
-			out = outAxis;
-			c = 3;
-			do
+			for (auto c = 0; c < 3; ++c)
 			{
-				(*out)[0] = *in;
-				--c;
-				++in;
-				++out;
-			} while (c);
-
-			--r;
-			inMatrix += 4;
-			outAxis = (float(*)[3])((char*)outAxis + 4);
-
-		} while (r);
+				(*outAxis)[3 * c + r] = inMatrix[c + 4 * r];
+			}
+		}
 	}
 
 	void Phys_AxisToOdeMatrix3(const float(*inAxis)[3], float* outMatrix)
 	{
-		float* out;
-		const float(*in)[3];
-		int c;
-
-		int r = 3;
-		do
+		for (auto r = 0; r < 3; ++r)
 		{
-			out = outMatrix;
-			in = inAxis;
-			c = 3;
-			do
+			for (auto c = 0; c < 3; ++c)
 			{
-				*out = (*in)[0];
-				--c;
-				++out;
-				++in;
-			} while (c);
-
-			outMatrix[3] = 0.0f;
-			--r;
-			inAxis = (const float(*)[3])((char*)inAxis + 4);
-			outMatrix += 4;
-
-		} while (r);
+				outMatrix[c + 4 * r] = (*inAxis)[3 * c + r];
+			}
+				
+			outMatrix[4 * r + 3] = 0.0f;
+		}
 	}
 
+	// checked
 	void AxisTransformVec3(const float* v1, const float* v2, float* out)
 	{
 		out[0] = v1[3] * v2[1] + v1[0] * v2[0] + v1[6] * v2[2];
