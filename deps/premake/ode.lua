@@ -105,11 +105,11 @@ if _ACTION and _ACTION ~= "clean" then
       text = string.gsub(text, "/%* #define dTLS_ENABLED 1 %*/", "#define dTLS_ENABLED 1")
     end
 
-    if _OPTIONS["no-threading-intf"] then
+    --[[ if _OPTIONS["no-threading-intf"] then ]]
       text = string.gsub(text, "/%* #define dTHREADING_INTF_DISABLED 1 %*/", "#define dTHREADING_INTF_DISABLED 1")
-    elseif not _OPTIONS["no-builtin-threading-impl"] then
+    --[[ elseif not _OPTIONS["no-builtin-threading-impl"] then
       text = string.gsub(text, "/%* #define dBUILTIN_THREADING_IMPL_ENABLED 1 %*/", "#define dBUILTIN_THREADING_IMPL_ENABLED 1")
-    end
+    end ]]
 
     if _OPTIONS["16bit-indices"] then
       text = string.gsub(text, "#define dTRIMESH_16BIT_INDICES 0", "#define dTRIMESH_16BIT_INDICES 1")
@@ -126,7 +126,7 @@ if _ACTION and _ACTION ~= "clean" then
     outfile:write(text)
 
 	-- MessageBoxW to A in ode/src/error.cpp
-	versionHeader:write("\n")
+	outfile:write("\n")
 	outfile:write("#undef UNICODE")
     outfile:close()
   end

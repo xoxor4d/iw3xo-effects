@@ -76,7 +76,14 @@
 #define Assert()	if(IsDebuggerPresent()) __debugbreak();	else {	\
 					game::Com_Error("Line %d :: %s\n%s ", __LINE__, __func__, __FILE__); }
 
+#pragma warning(push)
+#pragma warning(disable: 5054)
+#pragma warning(disable: 4100)
+#pragma warning(disable: 5054)
+#pragma warning(disable: 5054)
 #include "ode/ode.h"
+#pragma warning(pop)
+
 #include "detours/Detours.h"
 #include "game/structs.hpp"
 #include "utils/utils.hpp"

@@ -591,7 +591,7 @@ namespace fx_system
 		const auto msecLifeSpan = elem->lifeSpanMsec.base + (((elem->lifeSpanMsec.amplitude + 1) * static_cast<std::uint16_t>(fx_randomTable[17 + random_seed])) >> 16);
 
 		float velocity[3] = {};
-		FX_GetVelocityAtTime(elem, random_seed, msecLifeSpan, 0.0f, &orientation, remote_elem->baseVel, velocity);
+		FX_GetVelocityAtTime(elem, random_seed, static_cast<float>(msecLifeSpan), 0.0f, &orientation, remote_elem->baseVel, velocity);
 
 		float vel[3] = {};
 		vel[0] = 1000.0f * (fx_randomTable[3 + random_seed] * elem->angularVelocity[0].amplitude + elem->angularVelocity[0].base);
